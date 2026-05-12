@@ -9,7 +9,7 @@ OBJ = $(SRC_FILES:.cpp=.o)
 OBJ := $(OBJ:%=$(OBJ_DIR)/%)
 
 CC = c++
-CFLAGS = -Wall -Wextra -Werror -MMD -std=c++20
+CFLAGS = -Wall -Wextra -Werror -MMD -std=c++17
 INC = -I inc/
 
 all: $(NAME)

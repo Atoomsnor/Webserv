@@ -1,21 +1,24 @@
 #include "Logger.hpp"
+#include <fstream>
 #include <iostream>
+#include <chrono>
 
 std::unique_ptr<Logger> Logger::instance = nullptr;
 
 Logger::Logger()
 {
 	std::cout << "Logger instance created." << std::endl;
+	file = std::make_unique<std::ofstream>("log");
 }
 
 std::unique_ptr<Logger> &Logger::getInstance(void)
 {
 	if (instance == nullptr)
-		instance = std::unique_ptr<Logger>(new Logger());
+		instance.reset(new Logger());
 	return (instance);
 }
 
-void Logger::printMemory(void) const
+void Logger::printLog(std::string str) const
 {
-	std::cout << &instance << std::endl;
+	*file << &instance << ": " << str << std::endl;
 }

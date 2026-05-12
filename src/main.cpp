@@ -3,7 +3,7 @@
 void subf2(void)
 {
 	std::unique_ptr<Logger>& lp = Logger::getInstance();
-	lp->printMemory();
+	lp->printLog("BeepBoop");
 }
 
 int main(void)
