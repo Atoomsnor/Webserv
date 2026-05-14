@@ -4,7 +4,7 @@
 
 NAME		= webserv
 CPP			= c++
-CPPFLAGS	= -Wall -Wextra -Werror -MMD -std=c++17
+CPPFLAGS	= -Wall -Wextra -Werror -MMD -std=c++20 -static
 
 ################################################################################
 # Source files                                                                 #
@@ -14,6 +14,8 @@ INCLUDES	= -I ./inc
 
 SRC_DIR		= src
 SRC_FILES	= main.cpp Logger.cpp
+
+LOG_DIR		= logs
 
 OBJ_DIR		= obj
 OBJ			= $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
@@ -26,6 +28,9 @@ all: $(NAME)
 
 $(NAME): $(OBJ) Makefile
 	$(CPP) $(OBJ) $(CPPFLAGS) -o $(NAME)
+
+$(LOG_DIR):
+	mkdir -p $@
 
 $(OBJ_DIR):
 	mkdir -p $@
