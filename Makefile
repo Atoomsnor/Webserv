@@ -1,27 +1,37 @@
-NAME = webserv
+################################################################################
+# Basics                                                                       #
+################################################################################
 
-SRC_FILES = main.cpp Logger.cpp
+NAME		= webserv
+CPP			= c++
+CPPFLAGS	= -Wall -Wextra -Werror -MMD -std=c++17
 
-SRC_DIR = src
-OBJ_DIR = obj
+################################################################################
+# Source files                                                                 #
+################################################################################
 
-OBJ = $(SRC_FILES:.cpp=.o)
-OBJ := $(OBJ:%=$(OBJ_DIR)/%)
+INCLUDES	= -I ./inc
 
-CC = c++
-CFLAGS = -Wall -Wextra -Werror -MMD -std=c++17
-INC = -I inc/
+SRC_DIR		= src
+SRC_FILES	= main.cpp Logger.cpp
+
+OBJ_DIR		= obj
+OBJ			= $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
+
+################################################################################
+# Rules                                                                        #
+################################################################################
 
 all: $(NAME)
 
-$(NAME): $(OBJ) | Makefile
-	$(CC) $(OBJ) $(CFLAGS) $(INC) -o $(NAME)
+$(NAME): $(OBJ) Makefile
+	$(CPP) $(OBJ) $(CPPFLAGS) -o $(NAME)
 
 $(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
+	mkdir -p $@
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
-	$(CC) -c $(CFLAGS) $(INC) $< -o $@
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp Makefile | $(OBJ_DIR)
+	$(CPP) -c $(CPPFLAGS) $(DEPFLAGS) $(INCLUDES) $< -o $@
 
 clean:
 	rm -rf $(OBJ_DIR)
@@ -32,4 +42,5 @@ fclean: clean
 re: fclean all
 
 .PHONY: all clean fclean re
+
 -include $(OBJ:.o=.d)
