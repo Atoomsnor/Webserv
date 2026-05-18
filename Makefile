@@ -5,6 +5,7 @@
 NAME		= webserv
 CPP			= c++
 CPPFLAGS	= -Wall -Wextra -Werror -MMD -std=c++20 -static
+DEBUG_FLAGS = -D DEBUG_LOG=1 -g
 
 ################################################################################
 # Source files                                                                 #
@@ -37,6 +38,10 @@ $(OBJ_DIR):
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp Makefile | $(OBJ_DIR)
 	$(CPP) -c $(CPPFLAGS) $(DEPFLAGS) $(INCLUDES) $< -o $@
+
+debug: CPPFLAGS += $(DEBUG_FLAGS)
+debug: $(NAME)
+	./$(NAME)
 
 clean:
 	rm -rf $(OBJ_DIR)

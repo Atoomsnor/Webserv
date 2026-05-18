@@ -6,7 +6,7 @@
 #include <string>
 
 #ifndef DEBUG_LOG
-# define DEBUG_LOG 1
+# define DEBUG_LOG 0
 #endif
 
 class Logger {
