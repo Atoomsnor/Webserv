@@ -13,7 +13,7 @@ CPPFLAGS	= -Wall -Wextra -Werror -MMD -std=c++20 -static
 INCLUDES	= -I ./inc
 
 SRC_DIR		= src
-SRC_FILES	= main.cpp Logger.cpp
+SRC_FILES	= main.cpp Logger.cpp parser.cpp
 
 LOG_DIR		= logs
 

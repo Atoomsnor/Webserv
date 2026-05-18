@@ -5,11 +5,15 @@
 #include <format>
 #include <string>
 
+#ifndef DEBUG_LOG
+# define DEBUG_LOG 1
+#endif
+
 class Logger {
 	private:
 		static std::unique_ptr<Logger> instance;
 		std::unique_ptr<std::ofstream> file;
-		std::string	get_time(void) const;
+		std::string	get_time(std::string str) const;
 		Logger(); 
 	public:
 		static std::unique_ptr<Logger> &getInstance();
@@ -19,6 +23,8 @@ class Logger {
 
 	template<typename... Args>
 	void printLog(const std::string& format_str, Args&&... args) const {
-		*file << std::format("{}: {}", get_time(), std::vformat(format_str, std::make_format_args(args...))) << std::endl;
+		#if DEBUG_LOG == 1
+			*file << std::format("{} {}", get_time("%H:%M:%S"), std::vformat(format_str, std::make_format_args(args...))) << std::endl;
+		#endif
 	}
 };
