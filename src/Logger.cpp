@@ -5,9 +5,7 @@
 #include <iomanip>
 #include <sstream>
 
-std::unique_ptr<Logger> Logger::instance = nullptr;
-
-std::string Logger::get_time(std::string str) const {
+std::string Logger::getTime(std::string str) const {
     std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::tm tm_struct = *std::localtime(&t);
 	std::ostringstream ss;
@@ -15,15 +13,8 @@ std::string Logger::get_time(std::string str) const {
 	return ss.str();
 }
 
-Logger::Logger()
+void Logger::createLog(void)
 {
 	std::cout << "Logger instance created." << std::endl;
 	file = std::make_unique<std::ofstream>("logs/log-" + get_time("%Y%m%d_%H%M%S"));
-}
-
-std::unique_ptr<Logger> &Logger::getInstance(void)
-{
-	if (instance == nullptr)
-		instance = std::unique_ptr<Logger>(new Logger());
-	return (instance);
 }
