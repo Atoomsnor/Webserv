@@ -11,9 +11,9 @@
 
 class Logger {
 	private:
-		std::unique_ptr<std::ofstream> file;
-		std::string	getTime(std::string str) const;
-		void createLog(void);
+		static std::unique_ptr<std::ofstream> file;
+		static std::string	getTime(std::string str);
+		static void createLog(void);
 		Logger() = delete;
 	public:
 
@@ -21,11 +21,11 @@ class Logger {
 		void operator=(const Logger &cpy) = delete;
 
 	template<typename... Args>
-	static void printLog(const std::string& format_str, Args&&... args) const
+	static void printLog(const std::string& format_str, Args&&... args)
 	{
 		if (!file)
 			createLog();
-		*file << std::format("{} {}", get_time("%H:%M:%S"), std::vformat(format_str, std::make_format_args(args...))) << std::endl;
+		*file << std::format("{} {}", getTime("%H:%M:%S"), std::vformat(format_str, std::make_format_args(args...))) << std::endl;
 	}
 };
 
