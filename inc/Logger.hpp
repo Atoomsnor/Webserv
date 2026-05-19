@@ -23,8 +23,6 @@ class Logger {
 
 	template<typename... Args>
 	void printLog(const std::string& format_str, Args&&... args) const {
-		#if DEBUG_LOG == 1
 			*file << std::format("{} {}", get_time("%H:%M:%S"), std::vformat(format_str, std::make_format_args(args...))) << std::endl;
-		#endif
 	}
 };

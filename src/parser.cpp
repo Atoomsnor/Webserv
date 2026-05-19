@@ -27,7 +27,6 @@ std::vector<std::string>	Parser::tokenize(const std::string& filepath)
 					cur.clear();
 				}
 				tokens.push_back(std::string(1, c));
-				lp->printLog("line: {}", tokens);
 			}
 			else if (std::isspace(c))
 			{
@@ -38,17 +37,34 @@ std::vector<std::string>	Parser::tokenize(const std::string& filepath)
 				}
 			}
 			else
-			cur += c;
+				cur += c;
 		}
+		lp->printLog("line: {}", tokens.back());
 	}
 	if (!cur.empty())
 		tokens.push_back(cur);
 	return (tokens);
 }
 
+std::vector<ServerConfig>	parse(std::vector<std::string> &tokens)
+{
+	std::vector<ServerConfig>	sc;
+	int							depth_count;
+	std::unique_ptr<Logger>& lp = Logger::getInstance();
 
-
-
-
-
-// static std::vector<ServerConfig>	parse(const std::string& filepath);
+	for (auto it = tokens.begin(); it != tokens.end(); it++)
+	{
+		lp->printLog("token: {}", *it);
+		if (*it == "listen")
+			sc[depth_count].port = *(it + 1);
+		else if (*it == '{')
+			depth_count++, sc.push_back();
+		else if (*it == "host")
+			sc[depth_count].host = *(it + 1);
+		else if (*it == "server_name")
+			sc[depth_count].server_name = *(it + 1);
+		else if (*it == "error_page")
+			sc[depth_count].error_pages = {std::stoi(*(it + 1)), *(it + 2)};
+	}
+	return (sc);
+}
