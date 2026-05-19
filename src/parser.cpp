@@ -1,4 +1,4 @@
-#include "parser.hpp"
+#include "Parser.hpp"
 #include "Logger.hpp"
 #include <cctype>
 #include <fstream>
@@ -70,33 +70,41 @@ std::map<int, std::string> init_errorpages(void)
 
 std::vector<ServerConfig>	Parser::parse(std::vector<std::string> &tokens)
 {
-
+	return (serverParse(tokens));
 }
 
-std::vector<ServerConfig>	Parser::serverParse(std::vector<std::string> &tokens)
+std::vector<ServerConfig> Parser::serverParse(std::vector<std::string> &tokens)
 {
 	std::vector<ServerConfig>	sc(count_servers(tokens));
-	std::unique_ptr<Logger>& lp = Logger::getInstance();
+	std::unique_ptr<Logger>&	lp = Logger::getInstance();
+	int							server_idx = -1;
 
-	sc[0].error_pages = init_errorpages();
 	for (auto it = tokens.begin(); it != tokens.end(); it++)
 	{
-		lp->printLog("token: {}", *it);
+		if (*it == "server" && *(it + 1) == "{")
+		{
+			++server_idx;
+			sc[server_idx].error_pages = init_errorpages();
+			continue ;
+		}
+		if (server_idx < 0)
+			continue ;
 		if (*it == "listen")
-			sc[0].port = std::stoi(*(it + 1));
+			sc[server_idx].port = std::stoi(*(it + 1));
 		else if (*it == "host")
-			sc[0].host = *(it + 1);
+			sc[server_idx].host = *(it + 1);
 		else if (*it == "server_name")
-			sc[0].server_name = *(it + 1);
+			sc[server_idx].server_name = *(it + 1);
 		else if (*it == "client_max_body_size")
-			sc[0].max_body_size = std::stoi(*(it + 1));
+			sc[server_idx].max_body_size = std::stoi(*(it + 1));
 		else if (*it == "error_page")
-			sc[0].error_pages[std::stoi(*(it + 1))] = *(it + 2); // TODO stoi check
+			sc[server_idx].error_pages[std::stoi(*(it + 1))] = *(it + 2);
+		lp->printLog("token: {}", *it);
 	}
 	return (sc);
 }
 
-std::vector<LocationConfig>	Parser::locationParse(std::vector<std::string> &tokens)
-{
+// std::vector<LocationConfig>	Parser::locationParse(std::vector<std::string> &tokens)
+// {
 
-}
+// }

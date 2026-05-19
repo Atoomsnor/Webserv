@@ -19,6 +19,8 @@ class Parser {
 	public:
 		static std::vector<std::string>		tokenize(const std::string &filepath);
 		static std::vector<ServerConfig>	parse(std::vector<std::string> &tokens);
+		static std::vector<ServerConfig>	serverParse(std::vector<std::string> &tokens);
+		// static std::vector<LocationConfig>	locationParse(std::vector<std::string> &tokens);
 };
 
 struct LocationConfig {
