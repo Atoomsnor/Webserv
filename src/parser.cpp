@@ -1,5 +1,6 @@
 #include "parser.hpp"
 #include "Logger.hpp"
+#include <cctype>
 #include <fstream>
 #include <iostream>
 
@@ -46,11 +47,15 @@ std::vector<std::string>	Parser::tokenize(const std::string &filepath)
 	return (tokens);
 }
 
-int count_servers(std::vector<std::string> &tokens) // TODO MAKE COUNTER
+int count_servers(std::vector<std::string> &tokens)
 {
-	if (tokens.empty())
-		return (0);
-	return (1);
+	int count = 0;
+	for (std::size_t i = 0; i + 1 < tokens.size(); ++i)
+	{
+		if (tokens[i] == "server" && tokens[i + 1] == "{")
+			++count;
+	}
+	return (count);
 }
 
 std::map<int, std::string> init_errorpages(void)
@@ -64,6 +69,11 @@ std::map<int, std::string> init_errorpages(void)
 }
 
 std::vector<ServerConfig>	Parser::parse(std::vector<std::string> &tokens)
+{
+
+}
+
+std::vector<ServerConfig>	Parser::serverParse(std::vector<std::string> &tokens)
 {
 	std::vector<ServerConfig>	sc(count_servers(tokens));
 	std::unique_ptr<Logger>& lp = Logger::getInstance();
@@ -84,4 +94,9 @@ std::vector<ServerConfig>	Parser::parse(std::vector<std::string> &tokens)
 			sc[0].error_pages[std::stoi(*(it + 1))] = *(it + 2); // TODO stoi check
 	}
 	return (sc);
+}
+
+std::vector<LocationConfig>	Parser::locationParse(std::vector<std::string> &tokens)
+{
+
 }

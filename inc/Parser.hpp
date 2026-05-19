@@ -21,6 +21,14 @@ class Parser {
 		static std::vector<ServerConfig>	parse(std::vector<std::string> &tokens);
 };
 
-// struct LocationConfig {
-
-// };
+struct LocationConfig {
+	std::string							path;
+	std::string							root;
+	std::string							index;
+	bool								auto_index;
+	std::vector<std::string>			methods;
+	std::string							upload_store;
+	int									return_code;
+	std::string							return_url;
+	std::map<std::string, std::string>	cgi;
+};
