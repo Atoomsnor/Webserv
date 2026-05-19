@@ -26,3 +26,15 @@ class Logger {
 			*file << std::format("{} {}", get_time("%H:%M:%S"), std::vformat(format_str, std::make_format_args(args...))) << std::endl;
 	}
 };
+
+template <typename F, typename T>
+void debug_log(F func, T var)
+{
+	#if DEBUG_LOG == 1
+		func(var);
+	#endif
+	#if DEBUG_LOG == 0
+		(void)func;
+		(void)var;
+	#endif
+}

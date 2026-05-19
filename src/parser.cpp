@@ -4,10 +4,10 @@
 #include <iostream>
 
 
-std::vector<std::string>	Parser::tokenize(const std::string& filepath)
+std::vector<std::string>	Parser::tokenize(const std::string &filepath)
 {
 	//fileparse
-	std::unique_ptr<Logger>& lp = Logger::getInstance();
+	// std::unique_ptr<Logger>& lp = Logger::getInstance();
 	std::ifstream file(filepath);
 	std::vector<std::string> tokens;
 	std::string line;
@@ -39,32 +39,49 @@ std::vector<std::string>	Parser::tokenize(const std::string& filepath)
 			else
 				cur += c;
 		}
-		lp->printLog("line: {}", tokens.back());
+		// lp->printLog("line: {}", tokens.back());
 	}
 	if (!cur.empty())
 		tokens.push_back(cur);
 	return (tokens);
 }
 
-std::vector<ServerConfig>	parse(std::vector<std::string> &tokens)
+int count_servers(std::vector<std::string> &tokens) // TODO MAKE COUNTER
 {
-	std::vector<ServerConfig>	sc;
-	int							depth_count;
+	if (tokens.empty())
+		return (0);
+	return (1);
+}
+
+std::map<int, std::string> init_errorpages(void)
+{
+	std::map<int, std::string> map;
+	for (int i = 400; i <= 451; i++)
+		map.insert({i, "/index.html"});
+	for (int i = 500; i <= 511; i++)
+		map.insert({i, "/index.html"});
+	return (map);
+}
+
+std::vector<ServerConfig>	Parser::parse(std::vector<std::string> &tokens)
+{
+	std::vector<ServerConfig>	sc(count_servers(tokens));
 	std::unique_ptr<Logger>& lp = Logger::getInstance();
 
+	sc[0].error_pages = init_errorpages();
 	for (auto it = tokens.begin(); it != tokens.end(); it++)
 	{
 		lp->printLog("token: {}", *it);
 		if (*it == "listen")
-			sc[depth_count].port = *(it + 1);
-		else if (*it == '{')
-			depth_count++, sc.push_back();
+			sc[0].port = std::stoi(*(it + 1));
 		else if (*it == "host")
-			sc[depth_count].host = *(it + 1);
+			sc[0].host = *(it + 1);
 		else if (*it == "server_name")
-			sc[depth_count].server_name = *(it + 1);
+			sc[0].server_name = *(it + 1);
+		else if (*it == "client_max_body_size")
+			sc[0].max_body_size = std::stoi(*(it + 1));
 		else if (*it == "error_page")
-			sc[depth_count].error_pages = {std::stoi(*(it + 1)), *(it + 2)};
+			sc[0].error_pages[std::stoi(*(it + 1))] = *(it + 2); // TODO stoi check
 	}
 	return (sc);
 }
