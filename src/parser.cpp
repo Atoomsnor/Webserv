@@ -104,12 +104,37 @@ std::vector<ServerConfig> Parser::serverParse(std::vector<std::string> &tokens)
 			sc[server_idx].max_body_size = std::stoi(*(it + 1));
 		else if (*it == "error_page")
 			sc[server_idx].error_pages[std::stoi(*(it + 1))] = *(it + 2);
+		else if (*it == "location")
+			sc[server_idx].locations.push_back(locationParse(it));
 		Logger::printLog("token: {}", *it);
 	}
 	return (sc);
 }
 
-// std::vector<LocationConfig>	Parser::locationParse(std::vector<std::string> &tokens)
-// {
+LocationConfig	locationParse(auto it)
+{
+	LocationConfig lc;
 
-// }
+	while (*it && *it != "}")
+	{
+		if (*it == "location")
+			lc.path = *(it + 1);
+		else if (*it == "methods")
+		{
+			for (auto itc = it + 1; *itc != ";"; itc++)
+				lc.methods.push_back(*(itc));
+		}
+		else if (*it == "root")
+			lc.root = *(it + 1);
+		else if (*it == "index")
+			lc.index = *(it + 1);
+		else if (*it == "autoindex")
+			lc.auto_index = *(it + 1);
+		else if (*it == "upload_store")
+			lc.upload_store = *(it + 1);
+		else if (*it == "return")
+			lc.return_code = std::stoi(*(it + 1)), lc.return_url = *(it + 2);
+		it++;
+	}
+	return (lc);
+}

@@ -36,7 +36,7 @@ $(LOG_DIR):
 $(OBJ_DIR):
 	mkdir -p $@
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp Makefile | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp Makefile | $(OBJ_DIR) $(LOG_DIR)
 	$(CPP) -c $(CPPFLAGS) $(DEPFLAGS) $(INCLUDES) $< -o $@
 
 debug: CPPFLAGS += $(DEBUG_FLAGS)
