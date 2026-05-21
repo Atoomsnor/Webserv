@@ -18,5 +18,5 @@ std::string Logger::getTime(std::string str) {
 void Logger::createLog(void)
 {
 	std::cout << "log created" << std::endl;
-	file = std::make_unique<std::ofstream>("logs/log-" + getTime("%Y%m%d_%H%M%S"));
+	file = std::make_unique<std::ofstream>("logs/" + getTime("%Y%m%d_%H%M%S") + ".log");
 }
