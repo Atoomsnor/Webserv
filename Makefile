@@ -2,24 +2,29 @@
 # Basics                                                                       #
 ################################################################################
 
-NAME		= webserv
-CPP			= c++
-CPPFLAGS	= -Wall -Wextra -Werror -MMD -std=c++20 -static
-DEBUG_FLAGS = -D DEBUG_LOG=1 -g
+NAME            = webserv
+DEBUG_NAME      = webserv_debug
+
+CPP             = c++
+CPPFLAGS        = -Wall -Wextra -Werror -MMD -std=c++20 -static
+DEBUG_FLAGS     = -D DEBUG_LOG=1 -g
 
 ################################################################################
 # Source files                                                                 #
 ################################################################################
 
-INCLUDES	= -I ./inc
+INCLUDES        = -I ./inc
 
-SRC_DIR		= src
-SRC_FILES	= main.cpp Logger.cpp parser.cpp
+SRC_DIR         = src
+SRC_FILES       = main.cpp Logger.cpp Parser.cpp
 
-LOG_DIR		= logs
+LOG_DIR         = logs
 
-OBJ_DIR		= obj
-OBJ			= $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
+OBJ_DIR         = obj
+DEBUG_OBJ_DIR   = obj_debug
+
+OBJ             = $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
+DEBUG_OBJ       = $(SRC_FILES:%.cpp=$(DEBUG_OBJ_DIR)/%.o)
 
 ################################################################################
 # Rules                                                                        #
@@ -27,30 +32,49 @@ OBJ			= $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
 
 all: $(NAME)
 
-$(NAME): $(OBJ) Makefile
-	$(CPP) $(OBJ) $(CPPFLAGS) -o $(NAME)
+################################ RELEASE #######################################
 
-$(LOG_DIR):
-	mkdir -p $@
+$(NAME): $(OBJ) Makefile
+	$(CPP) $(OBJ) $(CPPFLAGS) -o $@
 
 $(OBJ_DIR):
 	mkdir -p $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp Makefile | $(OBJ_DIR) $(LOG_DIR)
-	$(CPP) -c $(CPPFLAGS) $(DEPFLAGS) $(INCLUDES) $< -o $@
+	$(CPP) -c $(CPPFLAGS) $(INCLUDES) $< -o $@
 
-debug: CPPFLAGS += $(DEBUG_FLAGS)
-debug: $(NAME)
-	./$(NAME)
+################################ DEBUG #########################################
+
+debug: $(DEBUG_NAME)
+	./$(DEBUG_NAME)
+
+$(DEBUG_NAME): $(DEBUG_OBJ) Makefile
+	$(CPP) $(DEBUG_OBJ) $(CPPFLAGS) $(DEBUG_FLAGS) -o $@
+
+$(DEBUG_OBJ_DIR):
+	mkdir -p $@
+
+$(DEBUG_OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp Makefile | $(DEBUG_OBJ_DIR) $(LOG_DIR)
+	$(CPP) -c $(CPPFLAGS) $(DEBUG_FLAGS) $(INCLUDES) $< -o $@
+
+################################ COMMON ########################################
+
+$(LOG_DIR):
+	mkdir -p $@
 
 clean:
 	rm -rf $(OBJ_DIR)
+	rm -rf $(DEBUG_OBJ_DIR)
 
 fclean: clean
 	rm -f $(NAME)
+	rm -f $(DEBUG_NAME)
 
 re: fclean all
 
-.PHONY: all clean fclean re
+re_debug: fclean debug
+
+.PHONY: all debug run_debug clean fclean re re_debug
 
 -include $(OBJ:.o=.d)
+-include $(DEBUG_OBJ:.o=.d)

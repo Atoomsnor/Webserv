@@ -2,7 +2,7 @@
 #include "Parser.hpp"
 #include <iostream>
 
-void print_configs(ServerConfig &config)
+void print_configs(Parser::ServerConfig &config)
 {
 	auto &err = config.error_pages;
 	Logger::printLog("port: {}\nhost: {}\nserver_name: {}\nmax_body_size {}", config.port, config.host, config.server_name, config.max_body_size);
@@ -25,7 +25,7 @@ int main(void)
 	std::vector<std::string> tokens = Parser::tokenize("webserv.conf");
 	// for (auto it = tokens.begin(); it != tokens.end(); it++)
 		// lp->printLog("token: {}", *it);
-	std::vector<ServerConfig> configs = Parser::parse(tokens);
+	std::vector<Parser::ServerConfig> configs = Parser::parse(tokens);
 	debug_log(print_configs, configs[0]);
 	debug_log(print_configs, configs[1]);
 }

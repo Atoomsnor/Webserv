@@ -67,26 +67,39 @@ std::map<int, std::string> init_errorpages(void)
 	return (map);
 }
 
-std::vector<ServerConfig>	Parser::parse(std::vector<std::string> &tokens)
+std::vector<Parser::ServerConfig>	Parser::parse(std::vector<std::string> &tokens)
 {
 	return (serverParse(tokens));
 }
 
-static void extract_ip(ServerConfig &sc, std::string str)
+static void extract_ip(Parser::ServerConfig &sc, std::string str)
 {
 	size_t split_pos = str.find(':');
 	if (split_pos == str.npos)
 		return ; // throw exception?
 	sc.host = str.substr(0, split_pos);
+	size_t prev = 0;
+	for (int i = 0; i < 4; i++)
+	{
+		size_t next = sc.host.find('.', prev + 1);
+		if (next == sc.host.npos && i == 3)
+			next = sc.host.length();
+		else if (next == sc.host.npos)
+			Logger::printLog("ERROR A IP: {}", sc.host), throw std::exception();
+		int size = std::stoi(sc.host.substr(prev, next));
+		if (size < 0 || size >= 256)
+			Logger::printLog("ERROR B IP: {}", sc.host);
+		prev = next + 1;
+	}
 	sc.port = std::stoi(str.substr(split_pos + 1, str.length() - split_pos));
 }
 
-std::vector<ServerConfig> Parser::serverParse(std::vector<std::string> &tokens)
+std::vector<Parser::ServerConfig> Parser::serverParse(std::vector<std::string> &tokens)
 {
-	std::vector<ServerConfig>	sc(count_servers(tokens));
+	std::vector<Parser::ServerConfig>	sc(count_servers(tokens));
 	int							server_idx = -1;
 
-	for (auto it = tokens.begin(); it != tokens.end(); it++)
+	for (std::vector<std::string>::iterator it = tokens.begin(); it != tokens.end(); it++)
 	{
 		if (*it == "server" && *(it + 1) == "{")
 		{
@@ -111,10 +124,10 @@ std::vector<ServerConfig> Parser::serverParse(std::vector<std::string> &tokens)
 	return (sc);
 }
 
-LocationConfig	Parser::locationParse(std::vector<std::string>::iterator &it,
+Parser::LocationConfig	Parser::locationParse(std::vector<std::string>::iterator &it,
 								std::vector<std::string>::iterator end)
 {
-	LocationConfig lc;
+	Parser::LocationConfig lc;
 
 	lc.path = *(it + 1);
 	it += 3;
