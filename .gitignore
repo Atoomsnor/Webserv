@@ -1,3 +1,6 @@
 logs
-
 .vscode
+obj
+obj_debug
+webserv
+webserv_debug

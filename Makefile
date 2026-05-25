@@ -16,7 +16,7 @@ DEBUG_FLAGS     = -D DEBUG_LOG=1 -g
 INCLUDES        = -I ./inc
 
 SRC_DIR         = src
-SRC_FILES       = main.cpp Logger.cpp Parser.cpp
+SRC_FILES       = main.cpp Logger.cpp Parser.cpp Server.cpp
 
 LOG_DIR         = logs
 

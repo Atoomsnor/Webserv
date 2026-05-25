@@ -30,7 +30,7 @@ class Logger {
 };
 
 template <typename F, typename T>
-void debug_log(F func, T var)
+void debug_log(F func, T &var)
 {
 	#if DEBUG_LOG == 1
 		func(var);
