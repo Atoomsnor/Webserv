@@ -21,7 +21,7 @@ void print_configs(Parser::ServerConfig &config)
 
 int main(void)
 {
-	std::cout << DEBUG_LOG << std::endl;
+	// std::cout << DEBUG_LOG << std::endl;
 	std::vector<std::string> tokens = Parser::tokenize("webserv.conf");
 	// for (auto it = tokens.begin(); it != tokens.end(); it++)
 		// lp->printLog("token: {}", *it);

@@ -8,41 +8,30 @@
 std::vector<std::string>	Parser::tokenize(const std::string &filepath)
 {
 	//fileparse
-	std::ifstream file(filepath); // catch exception?
+	std::ifstream file(filepath);
 	std::vector<std::string> tokens;
-	std::string line;
 	std::string cur;
 
-	
-	while (std::getline(file, line))
-	{
-		for (size_t i = 0; i < line.size(); i++)
-		{
-			char c = line[i];
-			if (c == '{' || c == '}' || c == ';')
-			{
-				if (!cur.empty())
-				{
-					tokens.push_back(cur);
-					cur.clear();
-				}
-				tokens.push_back(std::string(1, c));
-			}
-			else if (std::isspace(c))
-			{
-				if (!cur.empty())
-				{
-					tokens.push_back(cur);
-					cur.clear();
-				}
-			}
-			else
-				cur += c;
+	auto flush = [&]() {
+		if (!cur.empty()) {
+			tokens.push_back(std::move(cur));
+			cur.clear();
 		}
-		// lp->printLog("line: {}", tokens.back());
+	};
+
+	char	c;
+	while (file.get(c))
+	{
+		if (c == '{' || c == '}' || c == ';') {
+			flush();
+			tokens.push_back(std::string(1, c));
+		}
+		else if (std::isspace(c))
+			flush();
+		else
+			cur += c;
 	}
-	if (!cur.empty())
-		tokens.push_back(cur);
+	flush();
 	return (tokens);
 }
 
@@ -88,7 +77,7 @@ static void extract_ip(Parser::ServerConfig &sc, std::string str)
 			Logger::printLog("ERROR A IP: {}", sc.host), throw std::exception();
 		int size = std::stoi(sc.host.substr(prev, next));
 		if (size < 0 || size >= 256)
-			Logger::printLog("ERROR B IP: {}", sc.host);
+			Logger::printLog("ERROR B IP: {}", sc.host), throw std::exception();
 		prev = next + 1;
 	}
 	sc.port = std::stoi(str.substr(split_pos + 1, str.length() - split_pos));
