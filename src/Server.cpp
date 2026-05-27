@@ -5,6 +5,9 @@
 #include <sys/epoll.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <unistd.h>
+#include <string.h>
+#include <fcntl.h>
 
 Server::Server (std::vector<Parser::ServerConfig> server_conf) :
 	server_conf(server_conf),
@@ -15,14 +18,14 @@ Server::Server (std::vector<Parser::ServerConfig> server_conf) :
 	if (epoll_fd == -1)
 	{
 		perror("epoll_create1() error");
-		// throw std::exception();
+		throw std::exception();
 	}
 
-	socket_fd = socket(AF_INET, SOCK_STREAM, 0)
+	socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket_fd == -1)
 	{
 		perror ("socket() error");
-		// throw std::exception();
+		throw std::exception();
 	}
 
 	int opt = 1;
@@ -30,7 +33,7 @@ Server::Server (std::vector<Parser::ServerConfig> server_conf) :
 	{
 		perror ("setsockopt() error");
 		close (socket_fd);
-		// throw std::exception();
+		throw std::exception();
 	}
 
 	// Setup server_addr (prob make function for this);
@@ -40,26 +43,26 @@ Server::Server (std::vector<Parser::ServerConfig> server_conf) :
 	if (inet_pton(AF_INET, server_conf[0].host.c_str(), &server_addr.sin_addr) != 1)
 	{
 		perror ("inet_pton() error");
-		// throw std::exception();
+		throw std::exception();
 	}
 
-	// Logger::printLog("sin_port: {} ---- [0].port: {}", server_addr.sin_port, server_conf[0].port);
+	Logger::printLog("sin_port: {} ---- [0].port: {}", server_addr.sin_port, server_conf[0].port);
 	if (bind(socket_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1)
 	{
 		perror ("bind() error");
-		// throw std::exception();
+		throw std::exception();
 	}
 
 	if (listen(socket_fd, SOMAXCONN) == -1)
 	{
 		perror ("listen() error");
-		// throw std::exception();
+		throw std::exception();
 	}
 
 	if (setNonBlocking(socket_fd) == -1)
 	{
-		perror ("ioctl() error");
-		// throw std::exception();
+		perror ("fcntl() error");
+		throw std::exception();
 	}
 
 	ev.events = EPOLLIN;
@@ -67,28 +70,50 @@ Server::Server (std::vector<Parser::ServerConfig> server_conf) :
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &ev) == -1)
 	{
 		perror ("epoll_ctl() error");
-		// throw std::exception();
+		throw std::exception();
 	}
-	// Logger::printLog("socket_fd: {}", socket_fd);
+	Logger::printLog("socket_fd: {}", socket_fd);
 }
 
 
 int Server::setNonBlocking(int fd)
 {
-	int opt = 1;
-	if (ioctl(fd, FIONBIO, &opt) == -1)
-	return -1;
+	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
+		return -1;
 	return 0;
 }
 
-void acceptClient(int fd)
+void Server::acceptClient(int fd)
 {
-	(void)fd;
+	sockaddr_in client_addr;
+	socklen_t addr_len = sizeof(client_addr);
+	int client_fd = accept(fd, (struct sockaddr*)&client_addr, &addr_len);
+	if (client_fd < 0)
+		return ;
+	setNonBlocking(client_fd);
+	ev.data.fd = client_fd;
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1)
+	{
+		perror ("epoll_ctl() error");
+		throw std::exception();
+	}
+	Logger::printLog("New client at fd: {} and ip: {}", client_fd, inet_ntoa(client_addr.sin_addr));
 }
 
-void handleClient(int fd)
+void Server::handleClient(int fd)
 {
-	(void)fd;
+	char buf[4096];
+	ssize_t bytes = recv(fd, buf, sizeof(buf), 0);
+	if (bytes < 0)
+	{
+		perror ("bad things");
+		throw std::exception();
+	}
+	if (bytes == 0)
+	{
+		return ;
+	}
+	write(fd, buf, sizeof(buf));
 }
 
 void Server::loop()

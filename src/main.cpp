@@ -31,4 +31,5 @@ int main(void)
 	debug_log(print_configs, configs[1]);
 	Server server(configs);
 	server.print_server(server);
+	server.loop();
 }
