@@ -24,8 +24,11 @@ class Server
 		~Server();
 		
 		// std::vector<Parser::ServerConfig> &getServerConf() const;
+		void	createSocket();
 		void	loop();
+		void	registerToEpoll(int fd);
 		int		setNonBlocking(int fd);
+		void	bindAndListen();
 		void	acceptClient(int fd);
 		void	handleClient(int fd);
 		void	print_server(Server &server) const;

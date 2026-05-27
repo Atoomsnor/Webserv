@@ -29,7 +29,11 @@ int main(void)
 	std::vector<Parser::ServerConfig> configs = Parser::parse(tokens);
 	debug_log(print_configs, configs[0]);
 	debug_log(print_configs, configs[1]);
-	Server server(configs);
-	server.print_server(server);
-	server.loop();
+	try {
+		Server server(configs);
+		server.print_server(server);
+		server.loop();
+	} catch (const std::exception& e) {
+		std::cerr << e.what() << '\n';
+	}
 }
