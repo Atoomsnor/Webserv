@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sstream>
 
 void	Server::createSocket()
 {
@@ -124,10 +125,21 @@ void Server::handleClient(int fd)
 	}
 	Logger::printLog("received {} bytes", bytes);
 	
+	std::ifstream fs("test.html");
+	std::string str;
+
+	if (!fs)
+		str = "<html><body><p>Hello World!</p></body></html>";
+	else {
+		std::stringstream buffer;
+		buffer << fs.rdbuf();
+		str = buffer.str();
+	}
 	std::string response =  "HTTP/1.1 200 OK\r\n"
-							"Content-Length: 54\r\n"
-							"\r\n"
-							"Nils stinks and should stop opening slots in worktime\n";
+							"Content-Length: ";
+							response += std::to_string(str.size());
+							response += "\r\n\r\n";
+							response += str;
 	send(fd, response.c_str(), response.size(), 0);
 	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
 	close(fd);
