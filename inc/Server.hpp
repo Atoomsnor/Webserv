@@ -6,16 +6,17 @@
 class Server
 {
 	private:
-		std::vector<Parser::ServerConfig> server_conf;
-		int	epoll_fd;
-		int server_fd;
-		sockaddr_in server_addr;
-		struct epoll_event ev;
-		struct epoll_event events[64];
-
 		Server() = delete;
 		Server &operator=(const Server &rhs) = delete;
 		Server(const Server &cpy) = delete;
+
+		std::vector<Parser::ServerConfig>	server_conf;
+		int									epoll_fd;
+		int									socket_fd;
+		sockaddr_in							server_addr;
+		struct epoll_event					ev;
+		struct epoll_event					events[64];
+
 	public:
 		Server(std::vector<Parser::ServerConfig> server_conf);
 		Server &operator=(const Server &&rhs);
@@ -23,9 +24,9 @@ class Server
 		~Server();
 		
 		// std::vector<Parser::ServerConfig> &getServerConf() const;
-
-		void loop();
-		int setNonBlocking(int fd);
-
-		void print_server(Server &server) const;
+		void	loop();
+		int		setNonBlocking(int fd);
+		void	acceptClient(int fd);
+		void	handleClient(int fd);
+		void	print_server(Server &server) const;
 };
