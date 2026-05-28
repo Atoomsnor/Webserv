@@ -35,5 +35,9 @@ class Server
 		
 		int		setNonBlocking(int fd);
 		void	print_server(Server &server) const;
+		void	sendError(int fd, int error_code);
+		void	handleGet(int fd, std::string uri, Parser::LocationConfig *loc);
+
+		Parser::LocationConfig *matchLocation(const std::string &uri);
 		// std::vector<Parser::ServerConfig> &getServerConf() const;
 	};
