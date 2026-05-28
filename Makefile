@@ -2,29 +2,33 @@
 # Basics                                                                       #
 ################################################################################
 
-NAME            = webserv
-DEBUG_NAME      = webserv_debug
+NAME			= webserv
+DEBUG_NAME		= webserv_debug
 
-CPP             = c++
-CPPFLAGS        = -Wall -Wextra -Werror -MMD -std=c++20 -static
-DEBUG_FLAGS     = -D DEBUG_LOG=1 -g
+CPP				= c++
+CPPFLAGS		= -Wall -Wextra -Werror -MMD -std=c++20 -static
+DEBUG_FLAGS		= -D DEBUG_LOG=1 -g
 
 ################################################################################
 # Source files                                                                 #
 ################################################################################
 
-INCLUDES        = -I ./inc
+INCLUDES		= -I ./inc
 
-SRC_DIR         = src
-SRC_FILES       = main.cpp Logger.cpp Parser.cpp Server.cpp
+SRC_DIRS		=	src/ \
+					src/server/ \
 
-LOG_DIR         = logs
+SRC_FILES		=	main.cpp \
+					Server.cpp ClientLoop.cpp SocketSetup.cpp ServerUtils.cpp \
+					Logger.cpp Parser.cpp
 
-OBJ_DIR         = obj
-DEBUG_OBJ_DIR   = obj_debug
+LOG_DIR			= logs
 
-OBJ             = $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
-DEBUG_OBJ       = $(SRC_FILES:%.cpp=$(DEBUG_OBJ_DIR)/%.o)
+OBJ_DIR			= obj/
+DEBUG_OBJ_DIR	= obj_debug/
+
+OBJ				= $(SRC_FILES:%.cpp=$(OBJ_DIR)%.o)
+DEBUG_OBJ		= $(SRC_FILES:%.cpp=$(DEBUG_OBJ_DIR)%.o)
 
 ################################################################################
 # Rules                                                                        #
@@ -32,15 +36,17 @@ DEBUG_OBJ       = $(SRC_FILES:%.cpp=$(DEBUG_OBJ_DIR)/%.o)
 
 all: $(NAME)
 
+%/:
+	mkdir -p $@
+
+VPATH = $(SRC_DIRS)
+
 ################################ RELEASE #######################################
 
 $(NAME): $(OBJ) Makefile
 	$(CPP) $(OBJ) $(CPPFLAGS) -o $@
 
-$(OBJ_DIR):
-	mkdir -p $@
-
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp Makefile | $(OBJ_DIR) $(LOG_DIR)
+$(OBJ_DIR)%.o: %.cpp Makefile | $(OBJ_DIR) $(LOG_DIR)
 	$(CPP) -c $(CPPFLAGS) $(INCLUDES) $< -o $@
 
 ################################ DEBUG #########################################
@@ -51,10 +57,7 @@ debug: $(DEBUG_NAME)
 $(DEBUG_NAME): $(DEBUG_OBJ) Makefile
 	$(CPP) $(DEBUG_OBJ) $(CPPFLAGS) $(DEBUG_FLAGS) -o $@
 
-$(DEBUG_OBJ_DIR):
-	mkdir -p $@
-
-$(DEBUG_OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp Makefile | $(DEBUG_OBJ_DIR) $(LOG_DIR)
+$(DEBUG_OBJ_DIR)%.o: %.cpp Makefile | $(DEBUG_OBJ_DIR) $(LOG_DIR)
 	$(CPP) -c $(CPPFLAGS) $(DEBUG_FLAGS) $(INCLUDES) $< -o $@
 
 ################################ COMMON ########################################

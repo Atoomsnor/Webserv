@@ -14,7 +14,6 @@ class Server
 		int									epoll_fd;
 		int									socket_fd;
 		sockaddr_in							server_addr;
-		struct epoll_event					ev;
 		struct epoll_event					events[64];
 
 	public:
@@ -23,13 +22,18 @@ class Server
 		Server(const Server &&old);
 		~Server();
 		
-		// std::vector<Parser::ServerConfig> &getServerConf() const;
+		void	setup();
+		
+		void	socketSetup();
 		void	createSocket();
-		void	loop();
-		void	registerToEpoll(int fd);
-		int		setNonBlocking(int fd);
 		void	bindAndListen();
+		void	registerToEpoll(int fd);
+		
+		void	clientLoop();
 		void	acceptClient(int fd);
 		void	handleClient(int fd);
+		
+		int		setNonBlocking(int fd);
 		void	print_server(Server &server) const;
-};
+		// std::vector<Parser::ServerConfig> &getServerConf() const;
+	};

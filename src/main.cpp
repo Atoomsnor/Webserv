@@ -2,6 +2,7 @@
 #include "Server.hpp"
 #include "Parser.hpp"
 #include <iostream>
+#include <stdexcept>
 
 void print_configs(Parser::ServerConfig &config)
 {
@@ -27,13 +28,15 @@ int main(void)
 	// for (auto it = tokens.begin(); it != tokens.end(); it++)
 		// lp->printLog("token: {}", *it);
 	std::vector<Parser::ServerConfig> configs = Parser::parse(tokens);
-	debug_log(print_configs, configs[0]);
+	// debug_log(print_configs, configs[0]);
 	debug_log(print_configs, configs[1]);
+	Server server(configs);
 	try {
-		Server server(configs);
+		server.setup();
 		server.print_server(server);
-		server.loop();
+		server.clientLoop();
 	} catch (const std::exception& e) {
 		std::cerr << e.what() << '\n';
+		// return 1?
 	}
 }
