@@ -20,7 +20,7 @@ SRC_DIRS		=	src/ \
 
 SRC_FILES		=	main.cpp \
 					Server.cpp ClientLoop.cpp SocketSetup.cpp ServerUtils.cpp \
-					Logger.cpp Parser.cpp
+					Logger.cpp Parser.cpp HTTP.cpp
 
 LOG_DIR			= logs
 

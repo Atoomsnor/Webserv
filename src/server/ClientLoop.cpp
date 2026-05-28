@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "HTTP.hpp"
 #include "Parser.hpp"
 #include "Logger.hpp"
 #include <sys/socket.h>
@@ -22,7 +23,7 @@ void	Server::clientLoop()
 			throw std::runtime_error("epoll_wait() error");
 		for (int i = 0; i < n; i++)
 		{
-			Logger::printLog("event fd: {} socket_fd: {}", events[i].data.fd, socket_fd);
+			// Logger::printLog("event fd: {} socket_fd: {}", events[i].data.fd, socket_fd);
 			if (events[i].data.fd == socket_fd)
 				acceptClient(events[i].data.fd);
 			else
@@ -31,7 +32,7 @@ void	Server::clientLoop()
 	}
 }
 
-std::string getContentType(const std::string &path)
+std::string Server::getContentType(const std::string &path)
 {
 	if (path.ends_with(".html"))
 		return ("text/html");
@@ -44,17 +45,6 @@ std::string getContentType(const std::string &path)
 	if (path.ends_with(".js"))
 		return ("application/javascript");
 	return ("application/octet-stream");
-}
-
-std::string buildHTTPResponse(const size_t size, const std::string &body, const std::string code, const std::string &content_type)
-{
-	std::string response;
-
-	response += "HTTP/1.1" + code + "\r\n";
-	response += "Content-Type: " + content_type + "\r\n";
-	response += "Content-Length: " + std::to_string(size) + "\r\n\r\n";
-	response += body;
-	return (response);
 }
 
 Parser::LocationConfig *Server::matchLocation(const std::string &uri)
@@ -72,24 +62,6 @@ Parser::LocationConfig *Server::matchLocation(const std::string &uri)
 	return (match);
 }
 
-std::string get_response_code(int code)
-{
-	switch (code) {
-		case (400):
-			return (" 400 Bad Request");
-		case (401):
-			return (" 401 Unauthorized");
-		case (403):
-			return (" 403 Forbidden");
-		case (404):
-			return (" 404 Not Found");
-		case (405):
-			return (" 405 Method Not Allowed");
-		default:
-			return (" 200 OK");
-	}
-}
-
 void Server::sendError(int fd, int error_code)
 {
 	std::string filepath = "." + server_conf[0].error_pages[error_code];
@@ -99,7 +71,7 @@ void Server::sendError(int fd, int error_code)
 	std::stringstream ss_buffer;
 	ss_buffer << fs.rdbuf();
 	std::string str = ss_buffer.str();
-	std::string response = buildHTTPResponse(str.size(), str, get_response_code(error_code), getContentType(filepath));
+	std::string response = HTTP::buildHTTPResponse(str.size(), str, HTTP::getResponseCode(error_code), getContentType(filepath));
 	Logger::printLog("response: {}", response);
 	send(fd, response.c_str(), response.size(), 0);
 	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
@@ -124,30 +96,31 @@ void Server::handleGet(int fd, std::string uri, Parser::LocationConfig *loc) // 
 	std::stringstream ss_buffer;
 	ss_buffer << fs.rdbuf();
 	str = ss_buffer.str();
-	std::string response = buildHTTPResponse(str.size(), str, get_response_code(200), getContentType(filepath));
+	std::string response = HTTP::buildHTTPResponse(str.size(), str, HTTP::getResponseCode(200), getContentType(filepath));
 	Logger::printLog("response: {}", response);
 	ssize_t read_bytes = 0;
 	while (true)
 	{
 		read_bytes = send(fd, response.c_str(), response.size(), 0);
 		if (read_bytes < 0)
-			break;
+			break; // TODO check whats needs to happen in case?
 		if (read_bytes == 0)
-			break;
+			break; // TODO check whats needs to happen in case?
 		if (read_bytes >= (ssize_t)response.size())
 			break;
 		response = response.substr(read_bytes, response.size() - read_bytes);
 	}
 }
 
-void handlePost(int fd, std::string uri, Parser::LocationConfig *loc) // is POST allowed in this location?
+void Server::handlePost(int fd, std::string uri, Parser::LocationConfig *loc) // is POST allowed in this location?
 {
+	
 	(void)fd;
 	(void)uri;
 	(void)loc;
 }
 
-void handleDelete(int fd, std::string uri, Parser::LocationConfig *loc) // is DELETE alloewd in this location?
+void Server::handleDelete(int fd, std::string uri, Parser::LocationConfig *loc) // is DELETE alloewd in this location?
 {
 	(void)fd;
 	(void)uri;
