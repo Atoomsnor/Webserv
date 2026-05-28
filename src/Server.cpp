@@ -125,7 +125,7 @@ void Server::handleClient(int fd)
 	}
 	Logger::printLog("received {} bytes", bytes);
 	
-	std::ifstream fs("test.html");
+	std::ifstream fs(server_conf[0].locations[0].index);
 	std::string str;
 
 	if (!fs)
