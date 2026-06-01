@@ -112,11 +112,11 @@ void Server::handleGet(int fd, std::string uri, Parser::LocationConfig *loc) // 
 	}
 }
 
-void Server::handlePost(int fd, std::string uri, Parser::LocationConfig *loc, HTTP::postData pd)
+// delete postData -> use uri to get file name? (just delete all pd things now)
+void Server::handlePost(int fd, std::string uri, Parser::LocationConfig *loc)
 {
-	std::string filepath = "." + loc->root + uri + "/" + pd.file_name;
+	std::string filepath = "." + loc->root + uri;
 
-	Logger::printLog("file_name: {}", pd.file_name);
 	Logger::printLog("filepath: {} root: {} uri: {}", filepath, loc->root, uri);
 	if (!uri.empty() && uri.back() == '/')
 		filepath += loc->index;
@@ -129,7 +129,7 @@ void Server::handlePost(int fd, std::string uri, Parser::LocationConfig *loc, HT
 
 	std::ofstream of(filepath, std::ios::binary);
 
-	of << pd.body;
+	// of << req.body;
 	of.close();
 	std::string body = "<html><body>OK</body></html>";
 	std::string response = HTTP::buildHTTPResponse(body.size(), body, HTTP::getResponseCode(200), getContentType(".html"));
@@ -169,6 +169,8 @@ void Server::handleDelete(int fd, std::string uri, Parser::LocationConfig *loc) 
 void Server::handleClient(int fd)
 {
 	char	buf[4096];
+
+	bzero(buf, 4096);
 	ssize_t bytes = recv(fd, buf, sizeof(buf), 0);
 	if (bytes <= 0)
 	{
@@ -203,7 +205,7 @@ void Server::handleClient(int fd)
 	if (req.method == "GET")
 		handleGet(fd, req.uri, loc);
 	else if (req.method == "POST")
-		handlePost(fd, req.uri, loc, HTTP::getPostData(req.body));
+		handlePost(fd, req.uri, loc);
 	else if (req.method == "DELETE")
 		handleDelete(fd, req.uri, loc);
 

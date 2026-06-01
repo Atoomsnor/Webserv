@@ -24,11 +24,11 @@ HTTP::HTTPRequest HTTP::httpParse(const std::string &data)
 
 	req.method = data.substr(0, data.find(' '));
 	req.uri = data.substr(data.find(' ') + 1, data.find(' ', data.find(' ') + 1) - (data.find(' ') + 1));
-
+	req.body = data.substr(data.find("\r\n\r\n"));
 	return (req);
 }
 
-HTTP::postData	HTTP::getPostData(const std::string data)
+HTTP::postData	HTTP::getPostData(const std::string data) // not correct POST method?
 {
 	postData pd;
 
