@@ -67,7 +67,7 @@ void Server::sendError(int fd, int error_code)
 	std::string filepath = "." + server_conf[0].error_pages[error_code];
 	std::ifstream fs(filepath, std::ios::binary);
 	if (!fs)
-		Logger::printLog("Failed to open file {}", filepath);
+		Logger::printLog("Failed to open file {}", filepath); // add return
 	std::stringstream ss_buffer;
 	ss_buffer << fs.rdbuf();
 	std::string str = ss_buffer.str();
@@ -112,19 +112,57 @@ void Server::handleGet(int fd, std::string uri, Parser::LocationConfig *loc) // 
 	}
 }
 
-void Server::handlePost(int fd, std::string uri, Parser::LocationConfig *loc) // is POST allowed in this location?
+void Server::handlePost(int fd, std::string uri, Parser::LocationConfig *loc, HTTP::postData pd)
 {
-	
-	(void)fd;
-	(void)uri;
-	(void)loc;
+	std::string filepath = "." + loc->root + uri + "/" + pd.file_name;
+
+	Logger::printLog("file_name: {}", pd.file_name);
+	Logger::printLog("filepath: {} root: {} uri: {}", filepath, loc->root, uri);
+	if (!uri.empty() && uri.back() == '/')
+		filepath += loc->index;
+
+	// std::ifstream fs(filepath);
+	// if (fs)
+	// {
+	//  filepath += " 1";
+	// }
+
+	std::ofstream of(filepath, std::ios::binary);
+
+	of << pd.body;
+	of.close();
+	std::string body = "<html><body>OK</body></html>";
+	std::string response = HTTP::buildHTTPResponse(body.size(), body, HTTP::getResponseCode(200), getContentType(".html"));
+	send(fd, response.c_str(), response.size(), 0);
 }
 
 void Server::handleDelete(int fd, std::string uri, Parser::LocationConfig *loc) // is DELETE alloewd in this location?
 {
-	(void)fd;
-	(void)uri;
-	(void)loc;
+	std::string root = loc->root.empty() ? loc->upload_store : loc->root;
+	std::string filepath = "." + loc->root + uri;
+
+	if (access(filepath.c_str(), F_OK) == -1)
+	{
+		sendError(fd, 404);
+		return ;
+	}
+
+	if (access(filepath.c_str(), W_OK) == -1)
+	{
+		sendError(fd, 403);
+		return ;
+	}
+
+	if (unlink(filepath.c_str()) == -1)
+	{
+		sendError(fd, 500);
+		return ;
+	}
+
+	std::string response = HTTP::buildHTTPResponse(0, "", HTTP::getResponseCode(200), getContentType(filepath));
+	send(fd, response.c_str(), response.size(), 0);
+	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+	close (fd);
 }
 
 
@@ -143,32 +181,31 @@ void Server::handleClient(int fd)
 
 	Logger::printLog("received {} bytes from request {}", bytes, buf);
 
-	std::string data(buf);
-	std::string method = data.substr(0, data.find(' '));
-	std::string uri = data.substr(data.find(' ') + 1, data.find(' ', data.find(' ') + 1) - (data.find(' ') + 1));
-
-	Parser::LocationConfig *loc = matchLocation(uri);
+	HTTP::HTTPRequest req = HTTP::httpParse(std::string(buf, bytes));
+	
+	Logger::printLog("method: '{}' uri: '{}'", req.method, req.uri);
+	Parser::LocationConfig *loc = matchLocation(req.uri);
 	if (!loc)
 	{
 		Logger::printLog("404 Not Found!");
 		sendError(fd, 404);
 		return ;
 	}
-	Logger::printLog("method: {} uri: {} path: {}", method, uri, loc->root + loc->path + loc->index);
+	Logger::printLog("method: {} uri: {} path: {}", req.method, req.uri, loc->root + loc->path + loc->index);
 	
-	if (std::find(loc->methods.begin(), loc->methods.end(), method) == loc->methods.end())
+	if (std::find(loc->methods.begin(), loc->methods.end(), req.method) == loc->methods.end())
 	{
 		Logger::printLog("404 Not Found!");
 		sendError(fd, 405);
 		return ;
 	}
 
-	if (method == "GET")
-		handleGet(fd, uri, loc);
-	else if (method == "POST")
-		handlePost(fd, uri, loc);
-	else if (method == "DELETE")
-		handleDelete(fd, uri, loc);
+	if (req.method == "GET")
+		handleGet(fd, req.uri, loc);
+	else if (req.method == "POST")
+		handlePost(fd, req.uri, loc, HTTP::getPostData(req.body));
+	else if (req.method == "DELETE")
+		handleDelete(fd, req.uri, loc);
 
 	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
 	close(fd);

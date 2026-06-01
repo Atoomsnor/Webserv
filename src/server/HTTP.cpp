@@ -1,6 +1,6 @@
 #include "HTTP.hpp"
 
-std::string HTTP::getResponseCode(int code)
+std::string	HTTP::getResponseCode(int code)
 {
 	switch (code) {
 		case (400):
@@ -18,7 +18,48 @@ std::string HTTP::getResponseCode(int code)
 	}
 }
 
-std::string HTTP::buildHTTPResponse(const size_t size, const std::string &body, const std::string code, const std::string &content_type)
+HTTP::HTTPRequest HTTP::httpParse(const std::string &data)
+{
+	HTTPRequest	req;
+
+	req.method = data.substr(0, data.find(' '));
+	req.uri = data.substr(data.find(' ') + 1, data.find(' ', data.find(' ') + 1) - (data.find(' ') + 1));
+
+	return (req);
+}
+
+HTTP::postData	HTTP::getPostData(const std::string data)
+{
+	postData pd;
+
+	// Logger::printLog("data {} npos {}", data, data.npos);
+	size_t pos = data.find("filename=");
+	if (pos != data.npos)
+	{
+		pos += 10;
+		pd.file_name = data.substr(pos, data.find('"', pos) - (pos));
+	}
+	pos = data.find("name=");
+	if (pos != data.npos)
+	{
+		pos += 5;
+		pd.type_name = data.substr(pos, data.find('"', pos) - (pos));
+	}
+	pos = data.find("\r\n\r\n");
+	if (pos != data.npos)
+	{
+		pos += 4;
+
+		size_t end_pos = data.find("\r\n--", pos);
+		if (end_pos != data.npos)
+			pd.body = data.substr(pos, end_pos - pos);
+		else
+			pd.body = data.substr(pos);
+	}
+	return (pd);
+}
+
+std::string	HTTP::buildHTTPResponse(const size_t size, const std::string &body, const std::string code, const std::string &content_type)
 {
 	std::string response;
 

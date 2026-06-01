@@ -1,5 +1,6 @@
 #pragma once
 
+#include "HTTP.hpp"
 #include "Parser.hpp"
 #include <sys/socket.h>
 #include <sys/epoll.h>
@@ -39,7 +40,7 @@ class Server
 		void		print_server(Server &server) const;
 		void		sendError(int fd, int error_code);
 		void		handleGet(int fd, std::string uri, Parser::LocationConfig *loc);
-		void		handlePost(int fd, std::string uri, Parser::LocationConfig *loc);
+		void		handlePost(int fd, std::string uri, Parser::LocationConfig *loc, HTTP::postData pd);
 		void		handleDelete(int fd, std::string uri, Parser::LocationConfig *loc);
 		std::string	getContentType(const std::string &path);
 
