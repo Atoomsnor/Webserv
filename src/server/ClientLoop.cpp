@@ -4,6 +4,7 @@
 #include "Logger.hpp"
 #include <sys/socket.h>
 #include <sys/epoll.h>
+#include <sys/stat.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -111,14 +112,25 @@ void Server::handleGet(int fd, std::string uri, Parser::LocationConfig *loc)
 	}
 }
 
+static bool isDirectory(const std::string &path)
+{
+	struct stat s;
+	if (stat(path.c_str(), &s) == 0)
+		return (S_ISDIR(s.st_mode));
+	return (false);
+}
+
+// add file extension?
 void Server::handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, HTTP::Request &req)
 {
 	std::string filepath = "." + loc->root + uri;
 
-	Logger::printLog("filepath: {} root: {} uri: {}", filepath, loc->root, uri);
 	if (!uri.empty() && uri.back() == '/')
 		filepath += loc->index;
+	if (isDirectory(filepath))
+		filepath += static_cast<std::string>("/upload_") + Logger::getTime("%m%d%H%M%S");
 
+	Logger::printLog("filepath: {} root: {} uri: {}", filepath, loc->root, uri);
 	// std::ifstream fs(filepath);
 	// if (fs)
 	// {

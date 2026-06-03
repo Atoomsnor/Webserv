@@ -12,7 +12,6 @@
 class Logger {
 	private:
 		static std::unique_ptr<std::ofstream> file;
-		static std::string	getTime(std::string str);
 		static void createLog(void);
 		Logger() = delete;
 	public:
@@ -20,6 +19,7 @@ class Logger {
 		Logger(Logger &cpy) = delete;
 		void operator=(const Logger &cpy) = delete;
 
+		static std::string	getTime(std::string str);
 	template<typename... Args>
 	static void printLog(const std::string& format_str, Args&&... args)
 	{
