@@ -131,13 +131,8 @@ void Server::handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, H
 		filepath += static_cast<std::string>("/upload_") + Logger::getTime("%m%d%H%M%S");
 
 	Logger::printLog("filepath: {} root: {} uri: {}", filepath, loc->root, uri);
-	// std::ifstream fs(filepath);
-	// if (fs)
-	// {
-	//  filepath += " 1";
-	// }
 
-	std::ofstream of(filepath, std::ios::binary);
+	std::ofstream of(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 
 	of << req.body;
 	of.close();
@@ -208,12 +203,19 @@ void Server::handleClient(int fd)
 	
 	if (std::find(loc->methods.begin(), loc->methods.end(), req.method) == loc->methods.end())
 	{
-		Logger::printLog("404 Not Found!");
+		Logger::printLog("405 Method Not Allowed!");
 		sendError(fd, 405);
 		return ;
 	}
-
-	if (req.method == "GET")
+	std::string ext = req.uri.substr(req.uri.rfind('.'));
+	auto it = loc->cgi.find(ext);
+	if (it != loc->cgi.end())
+	{
+		std::string filepath = "." + loc->root + req.uri;
+		handleCGI(fd, req, filepath, it->second);
+		Logger::printLog("filepath with ext {}", filepath);
+	}
+	else if (req.method == "GET")
 		handleGet(fd, req.uri, loc);
 	else if (req.method == "POST")
 		handlePost(fd, req.uri, loc, req);
