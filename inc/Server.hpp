@@ -40,7 +40,7 @@ class Server
 		void		print_server(Server &server) const;
 		void		sendError(int fd, int error_code);
 		void		handleGet(int fd, std::string uri, Parser::LocationConfig *loc);
-		void		handlePost(int fd, std::string uri, Parser::LocationConfig *loc);
+		void		handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, HTTP::Request &req);
 		void		handleDelete(int fd, std::string uri, Parser::LocationConfig *loc);
 		std::string	getContentType(const std::string &path);
 

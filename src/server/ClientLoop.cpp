@@ -23,7 +23,6 @@ void	Server::clientLoop()
 			throw std::runtime_error("epoll_wait() error");
 		for (int i = 0; i < n; i++)
 		{
-			// Logger::printLog("event fd: {} socket_fd: {}", events[i].data.fd, socket_fd);
 			if (events[i].data.fd == socket_fd)
 				acceptClient(events[i].data.fd);
 			else
@@ -67,11 +66,11 @@ void Server::sendError(int fd, int error_code)
 	std::string filepath = "." + server_conf[0].error_pages[error_code];
 	std::ifstream fs(filepath, std::ios::binary);
 	if (!fs)
-		Logger::printLog("Failed to open file {}", filepath); // add return
+		Logger::printLog("Failed to open file {}", filepath); // TODO return
 	std::stringstream ss_buffer;
 	ss_buffer << fs.rdbuf();
 	std::string str = ss_buffer.str();
-	std::string response = HTTP::buildHTTPResponse(str.size(), str, HTTP::getResponseCode(error_code), getContentType(filepath));
+	std::string response = HTTP::buildResponse(str.size(), str, HTTP::getResponseCode(error_code), getContentType(filepath));
 	Logger::printLog("response: {}", response);
 	send(fd, response.c_str(), response.size(), 0);
 	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
@@ -79,7 +78,7 @@ void Server::sendError(int fd, int error_code)
 	close(fd);
 }
 
-void Server::handleGet(int fd, std::string uri, Parser::LocationConfig *loc) // is GET allowed in this location?
+void Server::handleGet(int fd, std::string uri, Parser::LocationConfig *loc)
 {
 	std::string filepath = "." + loc->root + uri;
 
@@ -96,7 +95,7 @@ void Server::handleGet(int fd, std::string uri, Parser::LocationConfig *loc) // 
 	std::stringstream ss_buffer;
 	ss_buffer << fs.rdbuf();
 	str = ss_buffer.str();
-	std::string response = HTTP::buildHTTPResponse(str.size(), str, HTTP::getResponseCode(200), getContentType(filepath));
+	std::string response = HTTP::buildResponse(str.size(), str, HTTP::getResponseCode(200), getContentType(filepath));
 	Logger::printLog("response: {}", response);
 	ssize_t read_bytes = 0;
 	while (true)
@@ -112,8 +111,7 @@ void Server::handleGet(int fd, std::string uri, Parser::LocationConfig *loc) // 
 	}
 }
 
-// delete postData -> use uri to get file name? (just delete all pd things now)
-void Server::handlePost(int fd, std::string uri, Parser::LocationConfig *loc)
+void Server::handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, HTTP::Request &req)
 {
 	std::string filepath = "." + loc->root + uri;
 
@@ -129,14 +127,15 @@ void Server::handlePost(int fd, std::string uri, Parser::LocationConfig *loc)
 
 	std::ofstream of(filepath, std::ios::binary);
 
-	// of << req.body;
+	of << req.body;
 	of.close();
+
 	std::string body = "<html><body>OK</body></html>";
-	std::string response = HTTP::buildHTTPResponse(body.size(), body, HTTP::getResponseCode(200), getContentType(".html"));
+	std::string response = HTTP::buildResponse(body.size(), body, HTTP::getResponseCode(200), getContentType(".html"));
 	send(fd, response.c_str(), response.size(), 0);
 }
 
-void Server::handleDelete(int fd, std::string uri, Parser::LocationConfig *loc) // is DELETE alloewd in this location?
+void Server::handleDelete(int fd, std::string uri, Parser::LocationConfig *loc)
 {
 	std::string root = loc->root.empty() ? loc->upload_store : loc->root;
 	std::string filepath = "." + loc->root + uri;
@@ -159,7 +158,7 @@ void Server::handleDelete(int fd, std::string uri, Parser::LocationConfig *loc) 
 		return ;
 	}
 
-	std::string response = HTTP::buildHTTPResponse(0, "", HTTP::getResponseCode(200), getContentType(filepath));
+	std::string response = HTTP::buildResponse(0, "", HTTP::getResponseCode(200), getContentType(filepath));
 	send(fd, response.c_str(), response.size(), 0);
 	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
 	close (fd);
@@ -183,7 +182,7 @@ void Server::handleClient(int fd)
 
 	Logger::printLog("received {} bytes from request {}", bytes, buf);
 
-	HTTP::HTTPRequest req = HTTP::httpParse(std::string(buf, bytes));
+	HTTP::Request req = HTTP::parse(std::string(buf, bytes));
 	
 	Logger::printLog("method: '{}' uri: '{}'", req.method, req.uri);
 	Parser::LocationConfig *loc = matchLocation(req.uri);
@@ -205,7 +204,7 @@ void Server::handleClient(int fd)
 	if (req.method == "GET")
 		handleGet(fd, req.uri, loc);
 	else if (req.method == "POST")
-		handlePost(fd, req.uri, loc);
+		handlePost(fd, req.uri, loc, req);
 	else if (req.method == "DELETE")
 		handleDelete(fd, req.uri, loc);
 

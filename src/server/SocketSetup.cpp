@@ -39,7 +39,6 @@ void	Server::bindAndListen()
 	server_addr.sin_port = htons(server_conf[0].port);
 	if (inet_pton(AF_INET, server_conf[0].host.c_str(), &server_addr.sin_addr) != 1)
 		throw std::runtime_error("inet_pton() error");
-
 	if (bind(socket_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1)
 		throw std::runtime_error("bind() error");
 		
