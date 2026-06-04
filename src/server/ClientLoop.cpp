@@ -220,7 +220,8 @@ void Server::handleClient(int fd)
 	auto it = loc->cgi.find(getExtension(req.uri));
 	if (it != loc->cgi.end())
 	{
-		std::string filepath = "." + loc->root + req.uri;
+		std::string script = req.uri.substr(loc->path.size());
+		std::string filepath = "." + loc->root + script;
 		handleCGI(fd, req, filepath, it->second);
 		Logger::printLog("filepath with ext {}", filepath);
 	}
