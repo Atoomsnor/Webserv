@@ -19,7 +19,21 @@ std::string	HTTP::getResponseCode(int code)
 			return (" 200 OK");
 	}
 }
-#include <iostream>
+
+std::string HTTP::getQuery(std::string &uri)
+{
+	std::string	query{};
+	size_t		qloc;
+
+	qloc = uri.rfind('?');
+	if (qloc != uri.npos)
+	{
+		query = uri.substr(qloc + 1);
+		uri = uri.substr(0, qloc);
+	}
+	return (query);
+}
+
 HTTP::Request HTTP::parse(const std::string &data)
 {
 	Request	req;
@@ -27,9 +41,11 @@ HTTP::Request HTTP::parse(const std::string &data)
 	std::string ln;
 
 	iss >> req.method >> req.uri >> req.version;
+	req.query = getQuery(req.uri);
+	iss.ignore();
 	while (std::getline(iss, ln))
 	{
-		if (ln == "\r\n")
+		if (ln == "\r")
 			break;
 		size_t breakpoint = ln.find(':');
 		if (breakpoint != ln.npos)
@@ -38,42 +54,47 @@ HTTP::Request HTTP::parse(const std::string &data)
 			Logger::printLog("header: |{}| |{}|", ln.substr(0, breakpoint), ln.substr(breakpoint + 1));
 		}
 	}
-	if (req.headers["Content-Type"].find("multipart/form-data") != req.headers["Content-Type"].npos)
-		req.pd = getPostData(data, req.body);
+	if (req.headers["Content-Type"].find("multipart/form-data") != req.headers["Content-Type"].npos
+		&& !req.headers["Content-Length"].empty())
+		req.pd = getPostData(iss, req.body, std::stoul(req.headers["Content-Length"]));
 	else if (!req.headers["Content-Length"].empty())
 		req.body = data.substr(data.find("\r\n\r\n") + 4, std::stoul(req.headers["Content-Length"]));
 	Logger::printLog("bodybag: {}", req.body);
 	return (req);
 }
 
-HTTP::postData	HTTP::getPostData(std::istringstream iss, std::string &body)
+HTTP::postData	HTTP::getPostData(std::istringstream &iss, std::string &body, size_t body_max)
 {
 	postData pd;
+	std::string ln;
 
-	// Logger::printLog("data {} npos {}", data, data.npos);
-	size_t pos = data.find("filename=");
-	if (pos != data.npos)
+	iss.ignore(2);
+	while (std::getline(iss, ln))
 	{
-		pos += 10;
-		pd.file_name = data.substr(pos, data.find('"', pos) - (pos));
+		if (ln == "\r")
+			break;
+		size_t pos = ln.find("filename=");
+		if (pos != ln.npos)
+		{
+			pos += 10;
+			pd.file_name = ln.substr(pos, ln.find('"', pos) - (pos));
+		}
+		pos = ln.find("name=");
+		if (pos != ln.npos)
+		{
+			pos += 5;
+			pd.type_name = ln.substr(pos, ln.find('"', pos) - (pos));
+		}
 	}
-	pos = data.find("name=");
-	if (pos != data.npos)
+	while (std::getline(iss, ln) && body_max > 0)
 	{
-		pos += 5;
-		pd.type_name = data.substr(pos, data.find('"', pos) - (pos));
-	}
-	pos = data.find("\r\n\r\n");
-	pos = data.find("\r\n\r\n", pos != data.npos ? pos : 0);
-	if (pos != data.npos)
-	{
-		pos += 4;
-
-		size_t end_pos = data.find("\r\n--", pos);
-		if (end_pos != data.npos)
-			body = data.substr(pos, end_pos - pos);
+		if (ln == "\r")
+			break;
+		body += ln.substr(0, body_max);
+		if (ln.size() > body_max)
+			body_max = 0;
 		else
-			body = data.substr(pos);
+			body_max -= ln.size(); 
 	}
 	pd.empty = false;
 	return (pd);

@@ -17,13 +17,15 @@ namespace HTTP
 		std::string							uri;
 		std::string							version;
 		std::string							body;
+		std::string							query;
 		std::map<std::string, std::string>	headers;
 		postData							pd;
 	};
 
 	Request	parse(const std::string &raw);
 	std::string getResponseCode(int code);
-	postData	getPostData(std::istringstream iss, std::string &body);
+	postData	getPostData(std::istringstream &iss, std::string &body, size_t body_max);
+	std::string getQuery(std::string &uri);
 
 	std::string buildResponse(const size_t size, const std::string &body,
 		const std::string code, const std::string &content_type);
