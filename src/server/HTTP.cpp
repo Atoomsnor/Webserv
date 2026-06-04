@@ -37,15 +37,16 @@ HTTP::Request HTTP::parse(const std::string &data)
 			req.headers[ln.substr(0, breakpoint)] = ln.substr(breakpoint + 1);
 			Logger::printLog("header: |{}| |{}|", ln.substr(0, breakpoint), ln.substr(breakpoint + 1));
 		}
-		
 	}
-	if (!req.headers["Content-Length"].empty())
-		req.body = data.substr(data.find("\r\n\r\n") + 4, std::stoul(req.headers["Content-Length"]));
 	if (req.headers["Content-Type"].find("multipart/form-data") != req.headers["Content-Type"].npos)
+		req.pd = getPostData(data, req.body);
+	else if (!req.headers["Content-Length"].empty())
+		req.body = data.substr(data.find("\r\n\r\n") + 4, std::stoul(req.headers["Content-Length"]));
+	Logger::printLog("bodybag: {}", req.body);
 	return (req);
 }
 
-HTTP::postData	HTTP::getPostData(const std::string data) // not correct POST method?
+HTTP::postData	HTTP::getPostData(std::istringstream iss, std::string &body)
 {
 	postData pd;
 
@@ -63,16 +64,18 @@ HTTP::postData	HTTP::getPostData(const std::string data) // not correct POST met
 		pd.type_name = data.substr(pos, data.find('"', pos) - (pos));
 	}
 	pos = data.find("\r\n\r\n");
+	pos = data.find("\r\n\r\n", pos != data.npos ? pos : 0);
 	if (pos != data.npos)
 	{
 		pos += 4;
 
 		size_t end_pos = data.find("\r\n--", pos);
 		if (end_pos != data.npos)
-			pd.body = data.substr(pos, end_pos - pos);
+			body = data.substr(pos, end_pos - pos);
 		else
-			pd.body = data.substr(pos);
+			body = data.substr(pos);
 	}
+	pd.empty = false;
 	return (pd);
 }
 

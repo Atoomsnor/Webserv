@@ -23,7 +23,7 @@ namespace HTTP
 
 	Request	parse(const std::string &raw);
 	std::string getResponseCode(int code);
-	postData	getPostData(const std::string data);
+	postData	getPostData(std::istringstream iss, std::string &body);
 
 	std::string buildResponse(const size_t size, const std::string &body,
 		const std::string code, const std::string &content_type);

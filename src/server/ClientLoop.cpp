@@ -125,6 +125,8 @@ void Server::handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, H
 {
 	std::string filepath = "." + loc->root + uri;
 
+	if (!req.pd.empty)
+		filepath += "/" + req.pd.file_name;
 	if (!uri.empty() && uri.back() == '/')
 		filepath += loc->index;
 	if (isDirectory(filepath))
@@ -171,6 +173,15 @@ void Server::handleDelete(int fd, std::string uri, Parser::LocationConfig *loc)
 	close (fd);
 }
 
+static std::string getExtension(const std::string &uri)
+{
+	std::string	ret{};
+	size_t		extension_loc = uri.rfind('.');
+
+	if (extension_loc != ret.npos)
+		ret = uri.substr(extension_loc);
+	return (ret);
+}
 
 void Server::handleClient(int fd)
 {
@@ -191,7 +202,6 @@ void Server::handleClient(int fd)
 
 	HTTP::Request req = HTTP::parse(std::string(buf, bytes));
 	
-	Logger::printLog("method: '{}' uri: '{}'", req.method, req.uri);
 	Parser::LocationConfig *loc = matchLocation(req.uri);
 	if (!loc)
 	{
@@ -207,8 +217,7 @@ void Server::handleClient(int fd)
 		sendError(fd, 405);
 		return ;
 	}
-	std::string ext = req.uri.substr(req.uri.rfind('.'));
-	auto it = loc->cgi.find(ext);
+	auto it = loc->cgi.find(getExtension(req.uri));
 	if (it != loc->cgi.end())
 	{
 		std::string filepath = "." + loc->root + req.uri;
