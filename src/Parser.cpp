@@ -147,7 +147,6 @@ Parser::LocationConfig	Parser::locationParse(std::vector<std::string>::iterator 
 		else if (*it == "cgi")
 			lc.cgi[*(it + 1)] = *(it + 2);
 		++it;
-		// Logger::printLog("token: {}", *it);
 	}
 	return lc;
 }

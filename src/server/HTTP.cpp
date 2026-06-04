@@ -25,7 +25,7 @@ std::string HTTP::getQuery(std::string &uri)
 	std::string	query{};
 	size_t		qloc;
 
-	qloc = uri.rfind('?');
+	qloc = uri.find('?');
 	if (qloc != uri.npos)
 	{
 		query = uri.substr(qloc + 1);
@@ -50,8 +50,8 @@ HTTP::Request HTTP::parse(const std::string &data)
 		size_t breakpoint = ln.find(':');
 		if (breakpoint != ln.npos)
 		{
-			req.headers[ln.substr(0, breakpoint)] = ln.substr(breakpoint + 1);
-			Logger::printLog("header: |{}| |{}|", ln.substr(0, breakpoint), ln.substr(breakpoint + 1));
+			req.headers[ln.substr(0, breakpoint)] = ln.substr(breakpoint + 2);
+			Logger::printLog("header: |{}| |{}|", ln.substr(0, breakpoint), ln.substr(breakpoint + 2));
 		}
 	}
 	if (req.headers["Content-Type"].find("multipart/form-data") != req.headers["Content-Type"].npos
