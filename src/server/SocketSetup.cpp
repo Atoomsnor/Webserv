@@ -15,7 +15,7 @@ void	Server::socketSetup()
 {
 	createSocket();
 	bindAndListen();
-	registerToEpoll(socket_fd);
+	registerToEpoll(socket_fd, EPOLLIN);
 }
 
 void	Server::createSocket()
@@ -48,12 +48,12 @@ void	Server::bindAndListen()
 	Logger::printLog("sin_port: {} ---- [0].port: {}", server_addr.sin_port, server_conf[0].port);
 }
 
-void	Server::registerToEpoll(int fd)
+void	Server::registerToEpoll(int fd, int epoll_event) //take this out of here, used by cgi aswell
 {
 	if (setNonBlocking(fd) == -1)
 		throw std::runtime_error("fcntl() error");
 	struct epoll_event ev;
-	ev.events = EPOLLIN;
+	ev.events = epoll_event;
 	ev.data.fd = fd;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &ev) == -1)
 		throw std::runtime_error("epoll_ctl() error");

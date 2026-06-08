@@ -1,0 +1,42 @@
+epoll_ctl can error?
+write in cgi can error?
+
+
+
+
+
+
+handleClient detects CGI:
+req.uri = "/cgi-bin/test.py"
+ext = ".py"
+loc->cgi.find(".py") → interpreter = "/usr/bin/python3"
+script = req.uri.substr(loc->path.size()) → "/test.py"
+filepath = "." + loc->root + script → "./cgi-bin/test.py"
+handleCGI(fd, req, "./cgi-bin/test.py", "/usr/bin/python3")
+Inside handleCGI:
+
+buildEnv builds the env strings from req and filepath
+pipe(in_pipe) and pipe(out_pipe) create the two pipes
+registerToEpoll(out_pipe[0], EPOLLIN) — watch for script output
+registerToEpoll(in_pipe[1], EPOLLOUT) — watch for when we can write POST body
+cgi_states[out_pipe[0]] = {fd, pid, in_pipe[1], req.body}
+cgi_write[in_pipe[1]] = out_pipe[0]
+fork()
+Child: wires pipes to stdin/stdout, calls execve("/usr/bin/python3", ["python3", "./cgi-bin/test.py"], env)
+Parent: closes in_pipe[0] and out_pipe[1], returns — event loop continues
+Back in clientLoop, epoll fires on in_pipe[1] (EPOLLOUT):
+
+CGIWrite(in_pipe[1]) is called
+Looks up cgi_write[in_pipe[1]] → gets out_pipe[0]
+Writes req.body to in_pipe[1]
+Closes in_pipe[1], removes from epoll and cgi_write
+Child reads from stdin, runs the script, writes output to out_pipe[1]
+Epoll fires on out_pipe[0] (EPOLLIN):
+
+CGIResponse(out_pipe[0]) is called
+Looks up cgi_states[out_pipe[0]] → gets client_fd, pid
+Reads CGI output from out_pipe[0]
+Prepends HTTP/1.1 200 OK\r\n and sends to client_fd
+waitpid(pid)
+Closes out_pipe[0], removes from epoll and cgi_states
+Closes client_fd
