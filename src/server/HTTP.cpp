@@ -39,7 +39,7 @@ std::string HTTP::getQuery(std::string &uri)
 HTTP::Request HTTP::parse(const std::string &data)
 {
 	Request	req;
-	std::istringstream iss(data);
+	std::istringstream iss(data, std::ios::binary);
 	std::string ln;
 
 	iss >> req.method >> req.uri >> req.version;
@@ -55,23 +55,24 @@ HTTP::Request HTTP::parse(const std::string &data)
 	}
 	if (req.headers["Content-Type"].find("multipart/form-data") != req.headers["Content-Type"].npos
 		&& !req.headers["Content-Length"].empty())
-		req.pd = getPostData(iss, req.body, std::stoul(req.headers["Content-Length"]));
+	{
+		req.pd = getPostData(iss);
+		req.body = getPDBody(data.substr(data.find("\r\n\r\n") + 4), std::stoul(req.headers["Content-Length"]));
+	}
 	else if (!req.headers["Content-Length"].empty())
 		req.body = data.substr(data.find("\r\n\r\n") + 4, std::stoul(req.headers["Content-Length"]));
 	Logger::printLog("bodybag: {}", req.body);
 	return (req);
 }
 
-HTTP::postData	HTTP::getPostData(std::istringstream &iss, std::string &body, size_t body_max)
+HTTP::postData	HTTP::getPostData(std::istringstream &iss)
 {
 	postData pd;
 	std::string ln;
 
 	iss.ignore(2);
-	while (std::getline(iss, ln))
+	while (std::getline(iss, ln) && ln != "\r")
 	{
-		if (ln == "\r")
-			break;
 		size_t pos = ln.find("filename=");
 		if (pos != ln.npos)
 		{
@@ -85,18 +86,30 @@ HTTP::postData	HTTP::getPostData(std::istringstream &iss, std::string &body, siz
 			pd.type_name = ln.substr(pos, ln.find('"', pos) - (pos));
 		}
 	}
-	while (std::getline(iss, ln) && body_max > 0)
-	{
-		if (ln == "\r")
-			break;
-		body += ln.substr(0, body_max);
-		if (ln.size() > body_max)
-			body_max = 0;
-		else
-			body_max -= ln.size(); 
-	}
+	// while (std::getline(iss, ln) && body_max > 0 && ln != "\r")
+	// {
+	// 	body += ln.substr(0, body_max);
+	// 	if (ln.size() > body_max)
+	// 		body_max = 0;
+	// 	else
+	// 		body_max -= ln.size(); 
+	// }
 	pd.empty = false;
 	return (pd);
+}
+#include <iostream>
+std::string HTTP::getPDBody(const std::string &data, size_t max)
+{
+	std::cout << max <<  " " << data << std::endl;
+	size_t pos1 = data.find("\r\n\r\n");
+	if (pos1 == data.npos)
+		return (data);
+	size_t pos2 = data.find("\r\n--", pos1 + 4);
+	if (pos2 == data.npos)
+		return (data.substr(pos1 + 4, max));
+	if (pos2 > max)
+		pos2 = max;
+	return (data.substr(pos1 + 4, pos2 - (pos1 + 4)));
 }
 
 std::string	HTTP::buildResponse(const size_t size, const std::string &body, const std::string code, const std::string &content_type)

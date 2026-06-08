@@ -24,7 +24,7 @@ void	Server::clientLoop()
 			throw std::runtime_error("epoll_wait() error");
 		for (int i = 0; i < n; i++)
 		{
-			Logger::printLog("epoll fired on fd {}", events[i].data.fd);
+			// Logger::printLog("epoll fired on fd {}", events[i].data.fd);
 			if (cgi_write.count(events[i].data.fd))
 				CGIWrite(events[i].data.fd);
 			else if (cgi_states.count(events[i].data.fd))
@@ -216,8 +216,6 @@ std::string Server::getRequest(int fd)
 		}
 		ret.append(buf, bytes);
 
-		Logger::printLog("received {} bytes from request {}", bytes, buf);
-
 		if (ret.find("\r\n\r\n") != ret.npos)
 			break;
 	}
@@ -227,15 +225,17 @@ std::string Server::getRequest(int fd)
 	size_t pos = ret.find("Content-Length:");
 	if (pos != ret.npos)
 		content_len = std::stoul(ret.substr(pos + 16, ret.find("\r\n", pos + 16) - (pos + 16)));
-	
+	Logger::printLog("{} {} {}", ret.size(), headers_end, content_len);
 	while (ret.size() - headers_end < content_len)
 	{
 		bzero(buf, 4096);
 		ssize_t bytes = recv(fd, buf, sizeof(buf), 0);
 		if (bytes <= 0)
 			break;
+		Logger::printLog("bytes: {} buf: {}", bytes, buf);
 		ret.append(buf, bytes);
 	}
+	Logger::printLog("received {} bytes from request {}", content_len, ret);
 	return (ret);
 }
 

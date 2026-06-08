@@ -24,7 +24,8 @@ namespace HTTP
 
 	Request	parse(const std::string &raw);
 	std::string getResponseCode(int code);
-	postData	getPostData(std::istringstream &iss, std::string &body, size_t body_max);
+	postData	getPostData(std::istringstream &iss);
+	std::string	getPDBody(const std::string &data, size_t max);
 	std::string getQuery(std::string &uri);
 
 	std::string buildResponse(const size_t size, const std::string &body,
