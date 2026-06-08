@@ -6,6 +6,14 @@
 #include <sys/epoll.h>
 #include <netinet/in.h>
 
+struct CGIState
+{
+	int			client_fd;
+	pid_t		pid;
+	int			write_fd; // in_pipe[1]
+	std::string	body;
+};
+
 class Server
 {
 	private:
@@ -18,6 +26,8 @@ class Server
 		int									socket_fd;
 		sockaddr_in							server_addr;
 		struct epoll_event					events[64];
+		std::map<int, CGIState>				cgi_states;
+		std::map<int, int>					cgi_write; // in_pipe[1] -> out_pipe[0]
 
 	public:
 		Server(std::vector<Parser::ServerConfig> server_conf);
@@ -30,7 +40,7 @@ class Server
 		void		socketSetup();
 		void		createSocket();
 		void		bindAndListen();
-		void		registerToEpoll(int fd);
+		void		registerToEpoll(int fd, int epoll_event);
 		
 		void		clientLoop();
 		void		acceptClient(int fd);
@@ -49,4 +59,7 @@ class Server
 		Parser::LocationConfig	*matchLocation(const std::string &uri);
 		// std::vector<Parser::ServerConfig> &getServerConf() const;
 
-void	handleCGI(int fd, HTTP::Request &req, std::string filepath, std::string interpreter);	};
+		void	handleCGI(int fd, HTTP::Request &req, std::string filepath, std::string interpreter);
+		void	CGIWrite(int pipe_fd);
+		void	CGIResponse(int pipe_fd);
+};
