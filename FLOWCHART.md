@@ -94,7 +94,7 @@ graph TD
 graph TD
     A["Server::handleClient"] -->|Receive data| B["Server::getRequest"]
     B -->|recv loop| C["Receive data chunks"]
-    C -->|Check for headers end| D{Found \\r\\n\\r\\n?}
+    C -->|Check for headers end| D{Found header terminator?}
     D -->|No| C
     D -->|Yes| E["Extract Content-Length"]
     E -->|Wait for body| F{Body complete?}
@@ -106,7 +106,7 @@ graph TD
     I -->|Extract| J["method, uri, version<br/>headers, body"]
     J -->|Check multipart| K{multipart/form-data?}
     K -->|Yes| L["getPostData"]
-    K -->|No| M["Extract body from\\nContent-Length"]
+    K -->|No| M["Extract body from<br/>Content-Length"]
     L -->|Parse| N["Extract filename"]
     M -->|Set in request| O["HTTP::Request object"]
     
