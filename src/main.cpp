@@ -21,9 +21,11 @@ void print_configs(Parser::ServerConfig &config)
 	}
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
-	std::vector<std::string> tokens = Parser::tokenize("webserv.conf");
+	if (argc < 2)
+		argv[1] = (char *)"webserv.conf";
+	std::vector<std::string> tokens = Parser::tokenize(argv[1]);
 	std::vector<Parser::ServerConfig> configs = Parser::parse(tokens);
 	Server server(configs);
 	try {

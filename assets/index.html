@@ -1,10 +1,70 @@
 <!DOCTYPE html>
-<html>
-	<head>
-		Our funky index page
-	</head>
-	<body>
-		<h1>This is the Header of the index page</h1>
-		<p>this is the paragraph of the index page</p>
-	</body>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>webserv</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<div class="container">
+		<header>
+			<h1>webserv</h1>
+			<p class="subtitle">HTTP/1.1 Server — Test Interface</p>
+		</header>
+
+		<main>
+			<section class="card">
+				<h2>Upload File</h2>
+				<div class="field">
+					<label for="file">Choose a file</label>
+					<input type="file" id="file" name="file">
+				</div>
+				<button type="button" class="btn" onclick="sendUpload()">POST /upload</button>
+			</section>
+
+			<section class="card">
+				<h2>Delete File</h2>
+				<div class="field">
+					<label for="filename">Filename</label>
+					<input type="text" id="filename" placeholder="e.g. file1.txt">
+				</div>
+				<button type="button" class="btn btn-danger" onclick="sendDelete()">DELETE /upload/&lt;file&gt;</button>
+			</section>
+
+			<section class="card">
+				<h2>Response</h2>
+				<pre id="response">Waiting for request...</pre>
+			</section>
+		</main>
+	</div>
+
+	<script>
+		function showResponse(res, body) {
+			document.getElementById('response').textContent = res.status + ' ' + res.statusText + '\n\n' + (body || '(empty body)');
+		}
+
+		function sendUpload() {
+			const fileInput = document.getElementById('file');
+			if (!fileInput.files.length) return;
+			const formData = new FormData();
+			formData.append('file', fileInput.files[0]);
+			fetch('/upload', { method: 'POST', body: formData })
+				.then(res => res.text().then(body => showResponse(res, body)))
+				.catch(err => {
+					document.getElementById('response').textContent = 'Error: ' + err;
+				});
+		}
+
+		function sendDelete() {
+			const filename = document.getElementById('filename').value.trim();
+			if (!filename) return;
+			fetch('/upload/' + filename, { method: 'DELETE' })
+				.then(res => res.text().then(body => showResponse(res, body)))
+				.catch(err => {
+					document.getElementById('response').textContent = 'Error: ' + err;
+				});
+		}
+	</script>
+</body>
 </html>

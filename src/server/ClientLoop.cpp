@@ -24,7 +24,12 @@ void	Server::clientLoop()
 			throw std::runtime_error("epoll_wait() error");
 		for (int i = 0; i < n; i++)
 		{
-			if (events[i].data.fd == socket_fd)
+			Logger::printLog("epoll fired on fd {}", events[i].data.fd);
+			if (cgi_write.count(events[i].data.fd))
+				CGIWrite(events[i].data.fd);
+			else if (cgi_states.count(events[i].data.fd))
+				CGIResponse(events[i].data.fd);
+			else if (events[i].data.fd == socket_fd)
 				acceptClient(events[i].data.fd);
 			else
 				handleClient(events[i].data.fd);
@@ -136,6 +141,14 @@ void Server::handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, H
 
 	std::ofstream of(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 
+	if (!of)
+	{
+		std::string body = "<html><body>500 Internal Server Error</body></html>";
+		std::string response = HTTP::buildResponse(body.size(), body, HTTP::getResponseCode(500), getContentType(".html"));
+		send(fd, response.c_str(), response.size(), 0);
+		return ;
+	}
+
 	of << req.body;
 	of.close();
 
@@ -183,24 +196,52 @@ static std::string getExtension(const std::string &uri)
 	return (ret);
 }
 
-void Server::handleClient(int fd)
+std::string Server::getRequest(int fd)
 {
+	std::string ret;
 	char	buf[4096];
 
-	bzero(buf, 4096);
-	ssize_t bytes = recv(fd, buf, sizeof(buf), 0);
-	if (bytes <= 0)
+	while (true)
 	{
-		if (bytes < 0)
-			perror("recv() error");
-		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
-		close(fd);
-		return ;
+		bzero(buf, 4096);
+		ssize_t bytes = recv(fd, buf, sizeof(buf), 0);
+
+		if (bytes <= 0)
+		{
+			if (bytes < 0)
+				perror("recv() error");
+			epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+			close(fd);
+			return ("");
+		}
+		ret.append(buf, bytes);
+
+		Logger::printLog("received {} bytes from request {}", bytes, buf);
+
+		if (ret.find("\r\n\r\n") != ret.npos)
+			break;
 	}
 
-	Logger::printLog("received {} bytes from request {}", bytes, buf);
+	size_t headers_end = ret.find("\r\n\r\n") + 4;
+	size_t content_len = 0;
+	size_t pos = ret.find("Content-Length:");
+	if (pos != ret.npos)
+		content_len = std::stoul(ret.substr(pos + 16, ret.find("\r\n", pos + 16) - (pos + 16)));
+	
+	while (ret.size() - headers_end < content_len)
+	{
+		bzero(buf, 4096);
+		ssize_t bytes = recv(fd, buf, sizeof(buf), 0);
+		if (bytes <= 0)
+			break;
+		ret.append(buf, bytes);
+	}
+	return (ret);
+}
 
-	HTTP::Request req = HTTP::parse(std::string(buf, bytes));
+void Server::handleClient(int fd)
+{
+	HTTP::Request req = HTTP::parse(getRequest(fd));
 	
 	Parser::LocationConfig *loc = matchLocation(req.uri);
 	if (!loc)
@@ -217,13 +258,14 @@ void Server::handleClient(int fd)
 		sendError(fd, 405);
 		return ;
 	}
-	auto it = loc->cgi.find(getExtension(req.uri));
+	std::map<std::string, std::string>::iterator it = loc->cgi.find(getExtension(req.uri));
 	if (it != loc->cgi.end())
 	{
 		std::string script = req.uri.substr(loc->path.size());
 		std::string filepath = "." + loc->root + script;
 		handleCGI(fd, req, filepath, it->second);
 		Logger::printLog("filepath with ext {}", filepath);
+		return ;
 	}
 	else if (req.method == "GET")
 		handleGet(fd, req.uri, loc);
@@ -245,7 +287,7 @@ void	Server::acceptClient(int fd)
 	if (client_fd < 0)
 		return ;
 	try {
-		registerToEpoll(client_fd);
+		registerToEpoll(client_fd, EPOLLIN);
 	} catch (...) {
 		close(client_fd);
 		Logger::printLog("closed fd: {}", client_fd);

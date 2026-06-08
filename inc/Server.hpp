@@ -35,6 +35,8 @@ class Server
 		void		clientLoop();
 		void		acceptClient(int fd);
 		void		handleClient(int fd);
+
+		std::string	getRequest(int fd);
 		
 		int			setNonBlocking(int fd);
 		void		print_server(Server &server) const;

@@ -15,6 +15,8 @@ std::string	HTTP::getResponseCode(int code)
 			return (" 404 Not Found");
 		case (405):
 			return (" 405 Method Not Allowed");
+		case (500):
+			return (" 500 Internal Server Error");
 		default:
 			return (" 200 OK");
 	}
@@ -49,10 +51,7 @@ HTTP::Request HTTP::parse(const std::string &data)
 			break;
 		size_t breakpoint = ln.find(':');
 		if (breakpoint != ln.npos)
-		{
 			req.headers[ln.substr(0, breakpoint)] = ln.substr(breakpoint + 2);
-			Logger::printLog("header: |{}| |{}|", ln.substr(0, breakpoint), ln.substr(breakpoint + 2));
-		}
 	}
 	if (req.headers["Content-Type"].find("multipart/form-data") != req.headers["Content-Type"].npos
 		&& !req.headers["Content-Length"].empty())
