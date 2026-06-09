@@ -86,21 +86,12 @@ HTTP::postData	HTTP::getPostData(std::istringstream &iss)
 			pd.type_name = ln.substr(pos, ln.find('"', pos) - (pos));
 		}
 	}
-	// while (std::getline(iss, ln) && body_max > 0 && ln != "\r")
-	// {
-	// 	body += ln.substr(0, body_max);
-	// 	if (ln.size() > body_max)
-	// 		body_max = 0;
-	// 	else
-	// 		body_max -= ln.size(); 
-	// }
 	pd.empty = false;
 	return (pd);
 }
-#include <iostream>
+
 std::string HTTP::getPDBody(const std::string &data, size_t max)
 {
-	std::cout << max <<  " " << data << std::endl;
 	size_t pos1 = data.find("\r\n\r\n");
 	if (pos1 == data.npos)
 		return (data);
