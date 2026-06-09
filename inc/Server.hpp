@@ -29,6 +29,8 @@ class Server
 		std::map<int, CGIState>				cgi_states;
 		std::map<int, int>					cgi_write; // in_pipe[1] -> out_pipe[0]
 
+		std::map<int, std::string> client_buffers;
+
 	public:
 		Server(std::vector<Parser::ServerConfig> server_conf);
 		Server &operator=(const Server &&rhs);
@@ -46,7 +48,7 @@ class Server
 		void		acceptClient(int fd);
 		void		handleClient(int fd);
 
-		std::string	getRequest(int fd);
+		bool	getRequest(int fd);
 		
 		int			setNonBlocking(int fd);
 		void		print_server(Server &server) const;

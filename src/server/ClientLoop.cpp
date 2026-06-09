@@ -81,6 +81,7 @@ void Server::sendError(int fd, int error_code)
 	send(fd, response.c_str(), response.size(), 0);
 	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
 	fs.close();
+	client_buffers.erase(fd);
 	close(fd);
 }
 
@@ -130,7 +131,7 @@ void Server::handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, H
 {
 	std::string filepath = "." + loc->root + uri;
 
-	if (!req.pd.empty)
+	if (isDirectory(filepath) && !req.pd.empty)
 		filepath += "/" + req.pd.file_name;
 	if (!uri.empty() && uri.back() == '/')
 		filepath += loc->index;
@@ -196,53 +197,47 @@ static std::string getExtension(const std::string &uri)
 	return (ret);
 }
 
-std::string Server::getRequest(int fd)
+bool Server::getRequest(int fd)
 {
-	std::string ret;
 	char	buf[4096];
 
-	while (true)
+
+	bzero(buf, 4096);
+	ssize_t bytes = recv(fd, buf, sizeof(buf), 0);
+	if (bytes <= 0)
 	{
-		bzero(buf, 4096);
-		ssize_t bytes = recv(fd, buf, sizeof(buf), 0);
-
-		if (bytes <= 0)
-		{
-			if (bytes < 0)
-				perror("recv() error");
-			epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
-			close(fd);
-			return ("");
-		}
-		ret.append(buf, bytes);
-
-		if (ret.find("\r\n\r\n") != ret.npos)
-			break;
+		// if (bytes < 0)
+		// 	perror("recv() error");
+		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+		close(fd);
+		client_buffers.erase(fd);
+		return (false);
 	}
+	client_buffers[fd].append(buf, bytes);
 
-	size_t headers_end = ret.find("\r\n\r\n") + 4;
+	size_t headers_end = client_buffers[fd].find("\r\n\r\n");
+	if (headers_end == client_buffers[fd].npos)
+		return (false);
+	headers_end += 4;
+
 	size_t content_len = 0;
-	size_t pos = ret.find("Content-Length:");
-	if (pos != ret.npos)
-		content_len = std::stoul(ret.substr(pos + 16, ret.find("\r\n", pos + 16) - (pos + 16)));
-	Logger::printLog("{} {} {}", ret.size(), headers_end, content_len);
-	while (ret.size() - headers_end < content_len)
-	{
-		bzero(buf, 4096);
-		ssize_t bytes = recv(fd, buf, sizeof(buf), 0);
-		if (bytes <= 0)
-			break;
-		Logger::printLog("bytes: {} buf: {}", bytes, buf);
-		ret.append(buf, bytes);
-	}
-	Logger::printLog("received {} bytes from request {}", content_len, ret);
-	return (ret);
+	size_t pos = client_buffers[fd].find("Content-Length:");
+	if (pos != client_buffers[fd].npos)
+		content_len = std::stoul(client_buffers[fd].substr(pos + 16, client_buffers[fd].find("\r\n", pos + 16) - (pos + 16)));
+	Logger::printLog("{} {} {}", client_buffers[fd].size(), headers_end, content_len);
+	if (client_buffers[fd].size() - headers_end < content_len)
+		return (false);
+	Logger::printLog("received {} bytes from request {}", content_len, client_buffers[fd]);
+	return (true);
 }
 
 void Server::handleClient(int fd)
 {
-	HTTP::Request req = HTTP::parse(getRequest(fd));
-	
+	if (!getRequest(fd))
+		return ;
+	HTTP::Request req = HTTP::parse(client_buffers[fd]);
+	client_buffers.erase(fd);
+
 	Parser::LocationConfig *loc = matchLocation(req.uri);
 	if (!loc)
 	{
