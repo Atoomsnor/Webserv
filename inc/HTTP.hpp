@@ -22,7 +22,7 @@ namespace HTTP
 		postData							pd;
 	};
 
-	Request	parse(const std::string &raw);
+	Request		parse(const std::string &raw);
 	std::string getResponseCode(int code);
 	postData	getPostData(std::istringstream &iss);
 	std::string	getPDBody(const std::string &data, size_t max);

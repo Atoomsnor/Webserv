@@ -14,28 +14,55 @@
 #include <stdexcept>
 #include <sys/wait.h>
 
-std::vector<std::string>	buildEnv(const HTTP::Request &req, const std::string &filepath)
+std::vector<std::string>	buildEnv(int fd, HTTP::Request &req, const Parser::LocationConfig &loc, const std::string &filepath)
 {
 	std::vector<std::string>	envs;
 
-	envs.push_back("REQUEST_METHOD=" + req.method);
-	envs.push_back("QUERY_STRING=" + req.query);
-	envs.push_back("CONTENT_LENGTH=" + std::to_string(req.body.size()));
-	envs.push_back("SCRIPT_FILENAME=" + filepath);
-	envs.push_back("PATH_INFO=" + req.uri);
+	for (const auto &h : req.headers)
+		Logger::printLog("{}: {}", h.first, h.second);
+
+	envs.push_back("AUTH_TYPE="); // ???
+
+	if (req.body.empty()) {
+		envs.push_back("CONTENT_LENGTH=");
+		envs.push_back("CONTENT_TYPE=");
+	} else {
+		envs.push_back("CONTENT_LENGTH=" + std::to_string(req.body.size())); // y
+		envs.push_back("CONTENT_TYPE=" + req.headers["Content-Type"]);
+	}
+	envs.push_back("GATEWAY_INTERFACE=CGI/1.1");
+	envs.push_back("PATH_INFO=" + req.uri); // y
+	envs.push_back("PATH_TRANSLATED=" + loc.root + req.uri.substr(loc.path.size()));
+	envs.push_back("QUERY_STRING=" + req.query); // y
+	envs.push_back("REMOTE_ADDR=" + client_ips[fd]);
+	envs.push_back("REMOTE_HOST=");
+	envs.push_back("REMOTE_IDENT=");
+	envs.push_back("REMOTE_USER=");
+	envs.push_back("REQUEST_METHOD=" + req.method); // y
+	envs.push_back("SCRIPT_NAME=");
+	envs.push_back("SERVER_NAME=");
+	envs.push_back("SERVER_PORT=");
+	envs.push_back("SERVER_PROTOCOL=");
+	envs.push_back("SERVER_SOFTWARE=");
+
+	// Yes. Loop over req.headers, skip Content-Type and Content-Length (already have dedicated variables), uppercase the header name, replace hyphens with underscores, and prepend HTTP_.
+
+	envs.push_back("SCRIPT_FILENAME=" + filepath); // y
 
 	return (envs);
 }
 
 
-void	Server::handleCGI(int fd, HTTP::Request &req, std::string filepath, std::string interpreter)
+void	Server::handleCGI(int fd, HTTP::Request &req, Parser::LocationConfig *loc, std::string interpreter)
 {
+	std::string script = req.uri.substr(loc->path.size());
+	std::string filepath = "." + loc->root + script;
+	
 	Logger::printLog("We are in CGI {} {} {} {}", fd, req.uri, filepath, interpreter);
-
 	int		in_pipe[2];
 	int		out_pipe[2];
 
-	std::vector<std::string> envStrings = buildEnv(req, filepath); // request to env for execve
+	std::vector<std::string> envStrings = buildEnv(fd, req, *loc, filepath); // request to env for execve
 	for (const std::string &e : envStrings)
 		Logger::printLog("env: {}", e);
 
