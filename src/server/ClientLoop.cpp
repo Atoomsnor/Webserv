@@ -256,10 +256,9 @@ void Server::handleClient(int fd)
 	std::map<std::string, std::string>::iterator it = loc->cgi.find(getExtension(req.uri));
 	if (it != loc->cgi.end())
 	{
-		std::string script = req.uri.substr(loc->path.size());
-		std::string filepath = "." + loc->root + script;
-		handleCGI(fd, req, filepath, it->second);
-		Logger::printLog("filepath with ext {}", filepath);
+		// std::string script = req.uri.substr(loc->path.size());
+		// std::string filepath = "." + loc->root + script;
+		handleCGI(fd, req, loc, it->second);
 		return ;
 	}
 	else if (req.method == "GET")
@@ -278,6 +277,7 @@ void	Server::acceptClient(int fd)
 	sockaddr_in	client_addr;
 	socklen_t	addr_len = sizeof(client_addr);
 	int			client_fd = accept(fd, (struct sockaddr*)&client_addr, &addr_len);
+	client_ips[client_fd] = inet_ntoa(client_addr.sin_addr);
 
 	if (client_fd < 0)
 		return ;
@@ -288,5 +288,5 @@ void	Server::acceptClient(int fd)
 		Logger::printLog("closed fd: {}", client_fd);
 		throw ;
 	}
-	Logger::printLog("New client at fd: {} and ip: {}", client_fd, inet_ntoa(client_addr.sin_addr));
+	Logger::printLog("New client at fd: {} and ip: {}", client_fd, client_ips[client_fd]);
 }

@@ -17,6 +17,7 @@
 std::vector<std::string>	buildEnv(int fd, HTTP::Request &req, const Parser::LocationConfig &loc, const std::string &filepath)
 {
 	std::vector<std::string>	envs;
+	(void)fd;
 
 	for (const auto &h : req.headers)
 		Logger::printLog("{}: {}", h.first, h.second);
@@ -34,7 +35,7 @@ std::vector<std::string>	buildEnv(int fd, HTTP::Request &req, const Parser::Loca
 	envs.push_back("PATH_INFO=" + req.uri); // y
 	envs.push_back("PATH_TRANSLATED=" + loc.root + req.uri.substr(loc.path.size()));
 	envs.push_back("QUERY_STRING=" + req.query); // y
-	envs.push_back("REMOTE_ADDR=" + client_ips[fd]);
+	// envs.push_back("REMOTE_ADDR=" + client_ips[fd]);
 	envs.push_back("REMOTE_HOST=");
 	envs.push_back("REMOTE_IDENT=");
 	envs.push_back("REMOTE_USER=");

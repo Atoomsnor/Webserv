@@ -3,6 +3,7 @@ write in cgi can error?
 make the fd's be part of a class or smth so they get cleaned up better to replace all the close()
 
 
+curl -X POST -d "hello=world" http://127.0.0.1:8080/cgi-bin/env_test.py
 
 
 
