@@ -62,7 +62,9 @@ class Server
 		Parser::LocationConfig	*matchLocation(const std::string &uri);
 		// std::vector<Parser::ServerConfig> &getServerConf() const;
 
-		void	handleCGI(int fd, HTTP::Request &req, Parser::LocationConfig *loc, std::string interpreter);
+		void						handleCGI(int fd, HTTP::Request &req, Parser::LocationConfig *loc, std::string interpreter);
+		std::vector<std::string>	buildEnv(int fd, HTTP::Request &req, const Parser::LocationConfig &loc);
+
 		void	CGIWrite(int pipe_fd);
 		void	CGIResponse(int pipe_fd);
 };
