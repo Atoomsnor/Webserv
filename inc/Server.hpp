@@ -9,9 +9,9 @@
 struct CGIState
 {
 	int			client_fd;
-	pid_t		pid;
 	int			write_fd; // in_pipe[1]
 	std::string	body;
+	std::string	output;
 };
 
 class Server

@@ -12,7 +12,6 @@
 #include <fcntl.h>
 #include <sstream>
 #include <stdexcept>
-#include <sys/wait.h>
 
 std::vector<std::string>	Server::buildEnv(int fd, HTTP::Request &req, const Parser::LocationConfig &loc)
 {
@@ -98,8 +97,10 @@ void	Server::handleCGI(int fd, HTTP::Request &req, Parser::LocationConfig *loc, 
 	{
 		close(in_pipe[1]);
 		close(out_pipe[0]);
-		if (dup2(in_pipe[0], STDIN_FILENO) == -1 || dup2(out_pipe[1], STDOUT_FILENO) == -1)
+		int devnull = open("/dev/null", O_WRONLY);
+		if (dup2(in_pipe[0], STDIN_FILENO) == -1 || dup2(out_pipe[1], STDOUT_FILENO) == -1 || dup2(devnull, STDERR_FILENO) == -1)
 			exit(1);
+		close(devnull);
 		close(in_pipe[0]);
 		close(out_pipe[1]);
 
@@ -128,7 +129,7 @@ void	Server::handleCGI(int fd, HTTP::Request &req, Parser::LocationConfig *loc, 
 	else
 		close(in_pipe[1]);
 
-	cgi_states[out_pipe[0]] = {fd, pid, in_pipe[1], req.body}; // store state for when epoll fires
+	cgi_states[out_pipe[0]] = {fd, in_pipe[1], req.body, ""}; // store state for when epoll fires
 }
 
 void	Server::CGIWrite(int pipe_fd)
@@ -145,30 +146,32 @@ void	Server::CGIWrite(int pipe_fd)
 
 void Server::CGIResponse(int pipe_fd) //temp
 {
-	int status;
-
 	Logger::printLog("we in CGIResponse for pipe_fd {}", pipe_fd);
 	CGIState &state = cgi_states[pipe_fd];
 
-	waitpid(state.pid, &status, 0);
-
-	if (WIFSIGNALED(status))
-		sendError(state.client_fd, 500);
-	else if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-		sendError(state.client_fd, 404);
-
-	std::string output;
 	char buf[4096];
 	ssize_t n;
-	while ((n = read(pipe_fd, buf, sizeof(buf))) > 0)
-		output.append(buf, n);
 
-	std::string response = "HTTP/1.1 200 OK\r\n" + output;
-	send(state.client_fd, response.c_str(), response.size(), 0);
+	n = read(pipe_fd, buf, sizeof(buf));
 
-	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, nullptr);
-	close(pipe_fd);
+	if (n > 0)
+	{
+		state.output.append(buf, n);
+		return ; // epoll will fire again when more data arrives
+	}
+	if (n == -1)
+		return ;
+	Logger::printLog("CGI process finished (pipe EOF)");
+	if (state.output.empty())
+		sendError(state.client_fd, 500);
+	else
+	{
+		std::string response = "HTTP/1.1 200 OK\r\n" + state.output;
+		send(state.client_fd, response.c_str(), response.size(), 0);
+	}
 	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, state.client_fd, nullptr);
 	close(state.client_fd);
+	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, nullptr);
+	close(pipe_fd);
 	cgi_states.erase(pipe_fd);
 }
