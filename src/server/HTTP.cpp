@@ -51,7 +51,12 @@ HTTP::Request HTTP::parse(const std::string &data)
 			break;
 		size_t breakpoint = ln.find(':');
 		if (breakpoint != ln.npos)
-			req.headers[ln.substr(0, breakpoint)] = ln.substr(breakpoint + 2);
+		{
+			std::string value = ln.substr(breakpoint + 2);
+			if (!value.empty() && value.back() == '\r')
+				value.pop_back();
+			req.headers[ln.substr(0, breakpoint)] = value;
+		}
 	}
 	if (req.headers["Content-Type"].find("multipart/form-data") != req.headers["Content-Type"].npos
 		&& !req.headers["Content-Length"].empty())

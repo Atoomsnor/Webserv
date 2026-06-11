@@ -145,23 +145,30 @@ void	Server::CGIWrite(int pipe_fd)
 
 void Server::CGIResponse(int pipe_fd) //temp
 {
+	int status;
+
 	Logger::printLog("we in CGIResponse for pipe_fd {}", pipe_fd);
-    CGIState &state = cgi_states[pipe_fd];
+	CGIState &state = cgi_states[pipe_fd];
 
-    std::string output;
-    char buf[4096];
-    ssize_t n;
-    while ((n = read(pipe_fd, buf, sizeof(buf))) > 0)
-        output.append(buf, n);
+	waitpid(state.pid, &status, 0);
 
-    waitpid(state.pid, nullptr, 0);
+	if (WIFSIGNALED(status))
+		sendError(state.client_fd, 500);
+	else if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+		sendError(state.client_fd, 404);
 
-    std::string response = "HTTP/1.1 200 OK\r\n" + output;
-    send(state.client_fd, response.c_str(), response.size(), 0);
+	std::string output;
+	char buf[4096];
+	ssize_t n;
+	while ((n = read(pipe_fd, buf, sizeof(buf))) > 0)
+		output.append(buf, n);
 
-    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, nullptr);
-    close(pipe_fd);
-    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, state.client_fd, nullptr);
-    close(state.client_fd);
-    cgi_states.erase(pipe_fd);
+	std::string response = "HTTP/1.1 200 OK\r\n" + output;
+	send(state.client_fd, response.c_str(), response.size(), 0);
+
+	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, nullptr);
+	close(pipe_fd);
+	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, state.client_fd, nullptr);
+	close(state.client_fd);
+	cgi_states.erase(pipe_fd);
 }

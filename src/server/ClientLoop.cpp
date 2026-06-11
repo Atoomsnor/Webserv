@@ -19,7 +19,7 @@ void	Server::clientLoop()
 	while (true)
 	{
 		// im epolling it up rn
-		n = epoll_wait(epoll_fd, events, 64, -1);
+		n = epoll_wait(epoll_fd, events, 64, 1000);
 		if (n < 0)
 			throw std::runtime_error("epoll_wait() error");
 		for (int i = 0; i < n; i++)
