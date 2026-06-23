@@ -31,7 +31,7 @@ int main(int argc, char **argv)
 	try {
 		server.setup();
 		server.print_server(server);
-		server.clientLoop();
+		server.eventLoop();
 	} catch (const std::exception& e) {
 		std::cerr << e.what() << '\n';
 		// return 1?

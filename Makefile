@@ -16,11 +16,14 @@ DEBUG_FLAGS		= -D DEBUG_LOG=1 -g
 INCLUDES		= -I ./inc
 
 SRC_DIRS		=	src/ \
+					src/parsing/ \
 					src/server/ \
 
-SRC_FILES		=	main.cpp \
-					Server.cpp ClientLoop.cpp SocketSetup.cpp ServerUtils.cpp \
-					Logger.cpp Parser.cpp HTTP.cpp CGI.cpp
+SRC_FILES		=	main.cpp Logger.cpp \
+					Parser.cpp HTTP.cpp \
+					Server.cpp SocketSetup.cpp \
+					EventLoop.cpp HandleClient.cpp \
+					Handlers.cpp CGI.cpp Error.cpp 
 
 LOG_DIR			= logs
 

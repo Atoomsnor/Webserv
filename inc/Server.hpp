@@ -29,8 +29,7 @@ class Server
 		std::map<int, std::string>			client_ips;
 		std::map<int, CGIState>				cgi_states;
 		std::map<int, int>					cgi_write; // in_pipe[1] -> out_pipe[0]
-
-		std::map<int, std::string> client_buffers;
+		std::map<int, std::string> 			client_buffers; // eyo wtf is this
 
 	public:
 		Server(std::vector<Parser::ServerConfig> server_conf);
@@ -38,33 +37,39 @@ class Server
 		Server(const Server &&old);
 		~Server();
 		
-		void		setup();
+		/* Server */
+		void						setup();
+		void						print_server(Server &server) const;
 		
-		void		socketSetup();
-		void		createSocket();
-		void		bindAndListen();
-		void		registerToEpoll(int fd, int epoll_event);
+		/* SocketSetup */
+		void						socketSetup();
+		void						createSocket();
+		void						bindAndListen();
+		void						registerToEpoll(int fd, int epoll_event);
 		
-		void		clientLoop();
-		void		acceptClient(int fd);
-		void		handleClient(int fd);
+		/* EventLoop */
+		void						eventLoop();
+		void						acceptClient(int fd);
 
-		bool	getRequest(int fd);
-		
-		int			setNonBlocking(int fd);
-		void		print_server(Server &server) const;
-		void		sendError(int fd, int error_code);
-		void		handleGet(int fd, std::string uri, Parser::LocationConfig *loc);
-		void		handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, HTTP::Request &req);
-		void		handleDelete(int fd, std::string uri, Parser::LocationConfig *loc);
-		std::string	getContentType(const std::string &path);
+		/* Error */
+		void						sendError(int fd, int error_code);
 
-		Parser::LocationConfig	*matchLocation(const std::string &uri);
-		// std::vector<Parser::ServerConfig> &getServerConf() const;
+		/* HandleClient*/
+		void						handleClient(int fd);
+		Parser::LocationConfig		*matchLocation(const std::string &uri);
+		bool						fetchRequest(int fd);
 
+		/* Handlers */
+		std::string					getContentType(const std::string &path);
+
+		void						handleDelete(int fd, std::string uri, Parser::LocationConfig *loc);
+		void						handleGet(int fd, std::string uri, Parser::LocationConfig *loc);
+		void						handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, HTTP::Request &req);
+
+		/* CGI */
 		void						handleCGI(int fd, HTTP::Request &req, Parser::LocationConfig *loc, std::string interpreter);
 		std::vector<std::string>	buildEnv(int fd, HTTP::Request &req, const Parser::LocationConfig &loc);
 
-		void	CGIWrite(int pipe_fd);
-		void	CGIResponse(int pipe_fd);
+		void						CGIWrite(int pipe_fd);
+		void						CGIResponse(int pipe_fd);
 };

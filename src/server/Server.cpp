@@ -27,6 +27,13 @@ void	Server::setup()
 	Logger::printLog("socket_fd: {}", socket_fd);
 }
 
+void	Server::print_server(Server &server) const
+{
+	Logger::printLog("epoll_fd: {}\nsocket_fd: {}\n", epoll_fd, socket_fd);
+	Logger::printLog("sin_family {}\nsin_port: {}\nsin_addr {}\n", server_addr.sin_family, server_addr.sin_port, 4);
+	(void)server;
+}
+
 // std::vector<Parser::ServerConfig> &Server::getServerConf() const
 // {
 // 	return (server_conf);

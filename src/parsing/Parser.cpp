@@ -4,7 +4,6 @@
 #include <fstream>
 #include <iostream>
 
-
 std::vector<std::string>	Parser::tokenize(const std::string &filepath)
 {
 	//fileparse
@@ -35,7 +34,7 @@ std::vector<std::string>	Parser::tokenize(const std::string &filepath)
 	return (tokens);
 }
 
-static int count_servers(std::vector<std::string> &tokens)
+static int	count_servers(std::vector<std::string> &tokens)
 {
 	int count = 0;
 	for (std::size_t i = 0; i + 1 < tokens.size(); ++i)
@@ -46,7 +45,7 @@ static int count_servers(std::vector<std::string> &tokens)
 	return (count);
 }
 
-std::map<int, std::string> init_errorpages(void)
+std::map<int, std::string>	init_errorpages(void)
 {
 	std::map<int, std::string> map;
 	for (int i = 400; i <= 451; i++)
@@ -61,7 +60,7 @@ std::vector<Parser::ServerConfig>	Parser::parse(std::vector<std::string> &tokens
 	return (serverParse(tokens));
 }
 
-static void extract_ip(Parser::ServerConfig &sc, std::string str)
+static void	extract_ip(Parser::ServerConfig &sc, std::string str)
 {
 	size_t split_pos = str.find(':');
 	if (split_pos == str.npos)
@@ -83,7 +82,7 @@ static void extract_ip(Parser::ServerConfig &sc, std::string str)
 	sc.port = std::stoi(str.substr(split_pos + 1, str.length() - split_pos));
 }
 
-std::vector<Parser::ServerConfig> Parser::serverParse(std::vector<std::string> &tokens)
+std::vector<Parser::ServerConfig>	Parser::serverParse(std::vector<std::string> &tokens)
 {
 	std::vector<Parser::ServerConfig>	sc(count_servers(tokens));
 	int							server_idx = -1;

@@ -2,41 +2,7 @@
 #include "Logger.hpp"
 #include <sstream>
 
-std::string	HTTP::getResponseCode(int code)
-{
-	switch (code) {
-		case (400):
-			return (" 400 Bad Request");
-		case (401):
-			return (" 401 Unauthorized");
-		case (403):
-			return (" 403 Forbidden");
-		case (404):
-			return (" 404 Not Found");
-		case (405):
-			return (" 405 Method Not Allowed");
-		case (500):
-			return (" 500 Internal Server Error");
-		default:
-			return (" 200 OK");
-	}
-}
-
-std::string HTTP::getQuery(std::string &uri)
-{
-	std::string	query{};
-	size_t		qloc;
-
-	qloc = uri.find('?');
-	if (qloc != uri.npos)
-	{
-		query = uri.substr(qloc + 1);
-		uri = uri.substr(0, qloc);
-	}
-	return (query);
-}
-
-HTTP::Request HTTP::parse(const std::string &data)
+HTTP::Request	HTTP::parse(const std::string &data)
 {
 	Request	req;
 	std::istringstream iss(data, std::ios::binary);
@@ -70,6 +36,26 @@ HTTP::Request HTTP::parse(const std::string &data)
 	return (req);
 }
 
+std::string	HTTP::getResponseCode(int code)
+{
+	switch (code) {
+		case (400):
+			return (" 400 Bad Request");
+		case (401):
+			return (" 401 Unauthorized");
+		case (403):
+			return (" 403 Forbidden");
+		case (404):
+			return (" 404 Not Found");
+		case (405):
+			return (" 405 Method Not Allowed");
+		case (500):
+			return (" 500 Internal Server Error");
+		default:
+			return (" 200 OK");
+	}
+}
+
 HTTP::postData	HTTP::getPostData(std::istringstream &iss)
 {
 	postData pd;
@@ -95,7 +81,7 @@ HTTP::postData	HTTP::getPostData(std::istringstream &iss)
 	return (pd);
 }
 
-std::string HTTP::getPDBody(const std::string &data, size_t max)
+std::string	HTTP::getPDBody(const std::string &data, size_t max)
 {
 	size_t pos1 = data.find("\r\n\r\n");
 	if (pos1 == data.npos)
@@ -106,6 +92,20 @@ std::string HTTP::getPDBody(const std::string &data, size_t max)
 	if (pos2 > max)
 		pos2 = max;
 	return (data.substr(pos1 + 4, pos2 - (pos1 + 4)));
+}
+
+std::string	HTTP::getQuery(std::string &uri)
+{
+	std::string	query{};
+	size_t		qloc;
+
+	qloc = uri.find('?');
+	if (qloc != uri.npos)
+	{
+		query = uri.substr(qloc + 1);
+		uri = uri.substr(0, qloc);
+	}
+	return (query);
 }
 
 std::string	HTTP::buildResponse(const size_t size, const std::string &body, const std::string code, const std::string &content_type)

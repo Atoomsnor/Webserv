@@ -13,55 +13,6 @@
 #include <sstream>
 #include <stdexcept>
 
-std::vector<std::string>	Server::buildEnv(int fd, HTTP::Request &req, const Parser::LocationConfig &loc)
-{
-	std::vector<std::string>	envs;
-
-	for (const auto &h : req.headers)
-		Logger::printLog("{}: {}", h.first, h.second);
-
-	envs.push_back("AUTH_TYPE="); // absolete, no auth
-
-	if (req.body.empty()) {
-		envs.push_back("CONTENT_LENGTH=");
-		envs.push_back("CONTENT_TYPE=");
-	} else {
-		envs.push_back("CONTENT_LENGTH=" + std::to_string(req.body.size())); // y
-		envs.push_back("CONTENT_TYPE=" + req.headers["Content-Type"]);
-	}
-	
-	envs.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	envs.push_back("PATH_INFO="); // absolete, no trailing path after script
-	envs.push_back("PATH_TRANSLATED=" + loc.root + req.uri.substr(loc.path.size()));
-	envs.push_back("QUERY_STRING=" + req.query); // y
-	envs.push_back("REMOTE_ADDR=" + client_ips[fd]);
-	envs.push_back("REMOTE_HOST=" + client_ips[fd]); // We aint doing fancy dns loop, subject says its ok
-	envs.push_back("REMOTE_IDENT="); // optional and absolete
-	envs.push_back("REMOTE_USER="); // absolete, no auth
-	envs.push_back("REQUEST_METHOD=" + req.method); // y
-	envs.push_back("SCRIPT_NAME=" + req.uri);
-	envs.push_back(std::string("SERVER_NAME=") + inet_ntoa(server_addr.sin_addr)); // idk lmao
-	envs.push_back("SERVER_PORT=" + std::to_string(ntohs(server_addr.sin_port)));
-	envs.push_back("SERVER_PROTOCOL=HTTP/1.1");
-	envs.push_back("SERVER_SOFTWARE=Webserv/1.0");
-
-	for (auto &[key, value] : req.headers)
-	{
-		if (key == "Content-Type" || key == "Content-Length")
-			continue;
-		std::string env_key = "HTTP_";
-		for (char c : key)
-		{
-			if (c == '-')
-				env_key += '_';
-			else
-				env_key += std::toupper(static_cast<unsigned char>(c));
-		}
-		envs.push_back(env_key + '=' + value);
-	}
-	return (envs);
-}
-
 void	Server::handleCGI(int fd, HTTP::Request &req, Parser::LocationConfig *loc, std::string interpreter)
 {
 	std::string script = req.uri.substr(loc->path.size());
@@ -130,6 +81,55 @@ void	Server::handleCGI(int fd, HTTP::Request &req, Parser::LocationConfig *loc, 
 		close(in_pipe[1]);
 
 	cgi_states[out_pipe[0]] = {fd, in_pipe[1], req.body, ""}; // store state for when epoll fires
+}
+
+std::vector<std::string>	Server::buildEnv(int fd, HTTP::Request &req, const Parser::LocationConfig &loc)
+{
+	std::vector<std::string>	envs;
+
+	for (const auto &h : req.headers)
+		Logger::printLog("{}: {}", h.first, h.second);
+
+	envs.push_back("AUTH_TYPE="); // absolete, no auth
+
+	if (req.body.empty()) {
+		envs.push_back("CONTENT_LENGTH=");
+		envs.push_back("CONTENT_TYPE=");
+	} else {
+		envs.push_back("CONTENT_LENGTH=" + std::to_string(req.body.size())); // y
+		envs.push_back("CONTENT_TYPE=" + req.headers["Content-Type"]);
+	}
+	
+	envs.push_back("GATEWAY_INTERFACE=CGI/1.1");
+	envs.push_back("PATH_INFO="); // absolete, no trailing path after script
+	envs.push_back("PATH_TRANSLATED=" + loc.root + req.uri.substr(loc.path.size()));
+	envs.push_back("QUERY_STRING=" + req.query); // y
+	envs.push_back("REMOTE_ADDR=" + client_ips[fd]);
+	envs.push_back("REMOTE_HOST=" + client_ips[fd]); // We aint doing fancy dns loop, subject says its ok
+	envs.push_back("REMOTE_IDENT="); // optional and absolete
+	envs.push_back("REMOTE_USER="); // absolete, no auth
+	envs.push_back("REQUEST_METHOD=" + req.method); // y
+	envs.push_back("SCRIPT_NAME=" + req.uri);
+	envs.push_back(std::string("SERVER_NAME=") + inet_ntoa(server_addr.sin_addr)); // idk lmao
+	envs.push_back("SERVER_PORT=" + std::to_string(ntohs(server_addr.sin_port)));
+	envs.push_back("SERVER_PROTOCOL=HTTP/1.1");
+	envs.push_back("SERVER_SOFTWARE=Webserv/1.0");
+
+	for (auto &[key, value] : req.headers)
+	{
+		if (key == "Content-Type" || key == "Content-Length")
+			continue;
+		std::string env_key = "HTTP_";
+		for (char c : key)
+		{
+			if (c == '-')
+				env_key += '_';
+			else
+				env_key += std::toupper(static_cast<unsigned char>(c));
+		}
+		envs.push_back(env_key + '=' + value);
+	}
+	return (envs);
 }
 
 void	Server::CGIWrite(int pipe_fd)

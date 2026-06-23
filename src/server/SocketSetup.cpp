@@ -48,6 +48,13 @@ void	Server::bindAndListen()
 	Logger::printLog("sin_port: {} ---- [0].port: {}", server_addr.sin_port, server_conf[0].port);
 }
 
+static int	setNonBlocking(int fd)
+{
+	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
+		return -1;
+	return 0;
+}
+
 void	Server::registerToEpoll(int fd, int epoll_event) //take this out of here, used by cgi aswell
 {
 	if (setNonBlocking(fd) == -1)
