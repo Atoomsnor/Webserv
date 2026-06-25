@@ -23,10 +23,17 @@ void print_configs(Parser::ServerConfig &config)
 
 int main(int argc, char **argv)
 {
+	std::vector<std::string> tokens; // raw accessing argv[1] was unsafe
 	if (argc < 2)
-		argv[1] = (char *)"webserv.conf";
-	std::vector<std::string> tokens = Parser::tokenize(argv[1]);
+		tokens = Parser::tokenize("webserv.conf");
+	else
+		tokens = Parser::tokenize(argv[1]);
 	std::vector<Parser::ServerConfig> configs = Parser::parse(tokens);
+	if (configs.empty())
+	{
+		std::cerr << "Config parsing error" << std::endl;
+		return (1);
+	}
 	Server server(configs);
 	try {
 		server.setup();
