@@ -89,7 +89,7 @@ std::vector<Parser::ServerConfig>	Parser::serverParse(std::vector<std::string> &
 
 	for (std::vector<std::string>::iterator it = tokens.begin(); it != tokens.end(); it++)
 	{
-		if (*it == "server" && *(it + 1) == "{")
+		if (std::next(it) != tokens.end() && *it == "server" && *(it + 1) == "{") // bounds check
 		{
 			++server_idx;
 			sc[server_idx].error_pages = init_errorpages();
@@ -97,18 +97,19 @@ std::vector<Parser::ServerConfig>	Parser::serverParse(std::vector<std::string> &
 		}
 		if (server_idx < 0)
 			continue ;
-		if (*it == "listen")
+		if (std::next(it) != tokens.end() && *it == "listen")
 			extract_ip(sc[server_idx], *(it + 1));
-		else if (*it == "server_name")
+		else if (std::next(it) != tokens.end() && *it == "server_name")
 			sc[server_idx].server_name = *(it + 1);
-		else if (*it == "client_max_body_size")
+		else if (std::next(it) != tokens.end() && *it == "client_max_body_size")
 			sc[server_idx].max_body_size = std::stoi(*(it + 1));
-		else if (*it == "error_page")
+		else if (std::next(it) != tokens.end() && std::next(std::next(it)) != tokens.end() && *it == "error_page") // not sure if you guys handled these in parsing so just in case
 			sc[server_idx].error_pages[std::stoi(*(it + 1))] = *(it + 2);
 		else if (*it == "location")
 			sc[server_idx].locations.push_back(locationParse(it, tokens.end()));
 		// Logger::printLog("token: {}", *it);
 	}
+	// seperate static func to check for missing elements? Is that even necessary?
 	return (sc);
 }
 

@@ -52,7 +52,8 @@ void	Server::handleDelete(int fd, std::string uri, Parser::LocationConfig *loc)
 	}
 
 	std::string response = HTTP::buildResponse(0, "", HTTP::getResponseCode(200), getContentType(filepath));
-	send(fd, response.c_str(), response.size(), 0);
+	if (send(fd, response.c_str(), response.size(), 0) == -1)
+		// TODO: log error, Idk if we can continue or if we should throw, maybe depends on error
 	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
 	close (fd);
 }
@@ -82,6 +83,9 @@ void	Server::handleGet(int fd, std::string uri, Parser::LocationConfig *loc)
 		read_bytes = send(fd, response.c_str(), response.size(), 0);
 		if (read_bytes < 0)
 			break; // TODO check whats needs to happen in case?
+			// Ama here, It think we specifically need to break,
+			// close the socket and free the fd..
+			// (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL) and close(fd))
 		if (read_bytes == 0)
 			break; // TODO check whats needs to happen in case?
 		if (read_bytes >= (ssize_t)response.size())
@@ -118,7 +122,8 @@ void Server::handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, H
 	{
 		std::string body = "<html><body>500 Internal Server Error</body></html>";
 		std::string response = HTTP::buildResponse(body.size(), body, HTTP::getResponseCode(500), getContentType(".html"));
-		send(fd, response.c_str(), response.size(), 0);
+		if (send(fd, response.c_str(), response.size(), 0) == -1);
+			// TODO: log error, Idk if we can continue or if we should throw, maybe depends on error
 		return ;
 	}
 
@@ -127,5 +132,6 @@ void Server::handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, H
 
 	std::string body = "<html><body>OK</body></html>";
 	std::string response = HTTP::buildResponse(body.size(), body, HTTP::getResponseCode(200), getContentType(".html"));
-	send(fd, response.c_str(), response.size(), 0);
+	if (send(fd, response.c_str(), response.size(), 0) == -1);
+		// TODO: log error, Idk if we can continue or if we should throw, maybe depends on error
 }

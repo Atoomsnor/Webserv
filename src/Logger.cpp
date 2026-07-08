@@ -17,6 +17,8 @@ std::string Logger::getTime(std::string str) {
 
 void Logger::createLog(void)
 {
-	std::cout << "log created" << std::endl;
 	file = std::make_unique<std::ofstream>("logs/" + getTime("%Y%m%d_%H%M%S") + ".log");
+	if (file == NULL || !file->is_open())
+		throw std::runtime_error("epoll_wait() error"); // Don't know if caught in a try statement, but could fail
+	std::cout << "log created" << std::endl;
 }

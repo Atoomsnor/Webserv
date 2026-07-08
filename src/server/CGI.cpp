@@ -167,7 +167,8 @@ void Server::CGIResponse(int pipe_fd) //temp
 	else
 	{
 		std::string response = "HTTP/1.1 200 OK\r\n" + state.output;
-		send(state.client_fd, response.c_str(), response.size(), 0);
+		if (send(state.client_fd, response.c_str(), response.size(), 0) == -1)
+			// TODO: check errno and handle accordingly
 	}
 	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, state.client_fd, nullptr);
 	close(state.client_fd);
