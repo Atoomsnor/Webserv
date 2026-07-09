@@ -122,7 +122,7 @@ void Server::handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, H
 	{
 		std::string body = "<html><body>500 Internal Server Error</body></html>";
 		std::string response = HTTP::buildResponse(body.size(), body, HTTP::getResponseCode(500), getContentType(".html"));
-		if (send(fd, response.c_str(), response.size(), 0) == -1);
+		if (send(fd, response.c_str(), response.size(), 0) == -1)
 			// TODO: log error, Idk if we can continue or if we should throw, maybe depends on error
 		return ;
 	}
@@ -132,6 +132,8 @@ void Server::handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, H
 
 	std::string body = "<html><body>OK</body></html>";
 	std::string response = HTTP::buildResponse(body.size(), body, HTTP::getResponseCode(200), getContentType(".html"));
-	if (send(fd, response.c_str(), response.size(), 0) == -1);
+	if (send(fd, response.c_str(), response.size(), 0) == -1)
+	{
+	}
 		// TODO: log error, Idk if we can continue or if we should throw, maybe depends on error
 }
