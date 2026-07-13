@@ -53,7 +53,7 @@ void	Server::handleDelete(int fd, std::string uri, Parser::LocationConfig *loc)
 
 	std::string response = HTTP::buildResponse(0, "", HTTP::getResponseCode(200), getContentType(filepath));
 	if (send(fd, response.c_str(), response.size(), 0) == -1)
-		// TODO: log error, Idk if we can continue or if we should throw, maybe depends on error
+		Logger::printLog("send() failed on fd {}: {}", fd, strerror(errno));
 	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
 	close (fd);
 }
@@ -82,12 +82,12 @@ void	Server::handleGet(int fd, std::string uri, Parser::LocationConfig *loc)
 	{
 		read_bytes = send(fd, response.c_str(), response.size(), 0);
 		if (read_bytes < 0)
-			break; // TODO check whats needs to happen in case?
-			// Ama here, It think we specifically need to break,
-			// close the socket and free the fd..
-			// (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL) and close(fd))
+		{
+			Logger::printLog("send() failed on fd {}: {}", fd, strerror(errno));
+			break;
+		}
 		if (read_bytes == 0)
-			break; // TODO check whats needs to happen in case?
+			break;
 		if (read_bytes >= (ssize_t)response.size())
 			break;
 		response = response.substr(read_bytes, response.size() - read_bytes);
@@ -123,7 +123,7 @@ void Server::handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, H
 		std::string body = "<html><body>500 Internal Server Error</body></html>";
 		std::string response = HTTP::buildResponse(body.size(), body, HTTP::getResponseCode(500), getContentType(".html"));
 		if (send(fd, response.c_str(), response.size(), 0) == -1)
-			// TODO: log error, Idk if we can continue or if we should throw, maybe depends on error
+			Logger::printLog("send() failed on fd {}: {}", fd, strerror(errno));
 		return ;
 	}
 
@@ -133,7 +133,5 @@ void Server::handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, H
 	std::string body = "<html><body>OK</body></html>";
 	std::string response = HTTP::buildResponse(body.size(), body, HTTP::getResponseCode(200), getContentType(".html"));
 	if (send(fd, response.c_str(), response.size(), 0) == -1)
-	{
-	}
-		// TODO: log error, Idk if we can continue or if we should throw, maybe depends on error
+		Logger::printLog("send() failed on fd {}: {}", fd, strerror(errno));
 }

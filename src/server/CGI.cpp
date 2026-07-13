@@ -138,7 +138,8 @@ void	Server::CGIWrite(int pipe_fd)
 	int	out_fd = cgi_write[pipe_fd];
 	CGIState &state = cgi_states[out_fd];
 
-	write(pipe_fd, state.body.c_str(), state.body.size()); //errorcheck
+	if (write(pipe_fd, state.body.c_str(), state.body.size()) == -1) //errorcheck
+		Logger::printLog("write() to CGI stdin failed on pipe {}: {}", pipe_fd, strerror(errno));
 	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, nullptr);
 	close(pipe_fd);
 	cgi_write.erase(pipe_fd);
@@ -168,8 +169,7 @@ void Server::CGIResponse(int pipe_fd) //temp
 	{
 		std::string response = "HTTP/1.1 200 OK\r\n" + state.output;
 		if (send(state.client_fd, response.c_str(), response.size(), 0) == -1)
-		{}
-			// TODO: check errno and handle accordingly
+			Logger::printLog("send() failed on fd {}: {}", state.client_fd, strerror(errno));
 	}
 	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, state.client_fd, nullptr);
 	close(state.client_fd);

@@ -3,7 +3,7 @@
 #include "Parser.hpp"
 #include <iostream>
 #include <stdexcept>
-
+#include <csignal>
 void print_configs(Parser::ServerConfig &config) // never used? Only for debugging?
 {
 	auto &err = config.error_pages;
@@ -43,6 +43,7 @@ int main(int argc, char **argv)
 		return (1);
 	}
 	Server server(configs);
+	signal(SIGPIPE, SIG_IGN); // make sure writes never fatal error, just send -1 if fail
 	try {
 		server.setup();
 		server.print_server(server);
