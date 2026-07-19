@@ -27,7 +27,7 @@ namespace HTTP
 	postData	getPostData(std::istringstream &iss);
 	std::string	getPDBody(const std::string &data, size_t max);
 	std::string getQuery(std::string &uri);
-
+	std::string	buildResponse(const size_t size, const std::string &body, const std::string code, const std::string &content_type, std::string target);
 	std::string buildResponse(const size_t size, const std::string &body,
 		const std::string code, const std::string &content_type);
 }

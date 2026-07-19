@@ -65,6 +65,7 @@ class Server
 		void						handleDelete(int fd, std::string uri, Parser::LocationConfig *loc);
 		void						handleGet(int fd, std::string uri, Parser::LocationConfig *loc);
 		void						handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, HTTP::Request &req);
+		void						handleRedir(int fd, std::string &uri, Parser::LocationConfig *loc, HTTP::Request &req);
 
 		/* CGI */
 		void						handleCGI(int fd, HTTP::Request &req, Parser::LocationConfig *loc, std::string interpreter);

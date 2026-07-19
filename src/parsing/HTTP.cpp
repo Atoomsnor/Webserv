@@ -39,6 +39,10 @@ HTTP::Request	HTTP::parse(const std::string &data)
 std::string	HTTP::getResponseCode(int code)
 {
 	switch (code) {
+		case (301):
+			return (" 301 Moved Permanently"); //needed to be handled
+		case (302):
+			return (" 302 Found"); //not sure if needed to be handled but sould be able to
 		case (400):
 			return (" 400 Bad Request");
 		case (401):
@@ -49,8 +53,18 @@ std::string	HTTP::getResponseCode(int code)
 			return (" 404 Not Found");
 		case (405):
 			return (" 405 Method Not Allowed");
+		case(408):
+			return (" 408 Request Timeout");
+		case(413):
+			return (" 413 Payload Too Large");
 		case (500):
 			return (" 500 Internal Server Error");
+		case (502):
+			return (" 502 Bad Gateway");
+		case (503):
+			return (" 503 Service unavailable");
+		case (505):
+			return (" 505 HTTP Version Not supported");
 		default:
 			return (" 200 OK");
 	}
@@ -112,9 +126,27 @@ std::string	HTTP::buildResponse(const size_t size, const std::string &body, cons
 {
 	std::string response;
 
-	response += "HTTP/1.1" + code + "\r\n";
+	response += "HTTP/1.1 " + code + "\r\n"; //was missing a space? I don't think code has a space
 	response += "Content-Type: " + content_type + "\r\n";
-	response += "Content-Length: " + std::to_string(size) + "\r\n\r\n";
+	response += "Content-Length: " + std::to_string(size) + "\r\n";
+	response += "\r\n";
+	response += body;
+	return (response);
+}
+
+std::string	HTTP::buildResponse(const size_t size, const std::string &body, const std::string code, const std::string &content_type, std::string target)
+{
+	std::string response;
+
+	response += "HTTP/1.1 " + code + "\r\n"; //was missing a space? I don't think code has a space
+	response += "Content-Type: " + content_type + "\r\n";
+	response += "Content-Length: " + std::to_string(size) + "\r\n";
+	if (!target.empty()) //not really intuitive but for now I Just want to handle 301 and 302
+	{
+		response += "Location: " + target + "\r\n"; 
+	}
+
+	response += "\r\n";
 	response += body;
 	return (response);
 } 

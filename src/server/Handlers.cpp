@@ -135,3 +135,17 @@ void Server::handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, H
 	if (send(fd, response.c_str(), response.size(), 0) == -1)
 		Logger::printLog("send() failed on fd {}: {}", fd, strerror(errno));
 }
+
+void	Server::handleRedir(int fd, std::string &uri, Parser::LocationConfig *loc, HTTP::Request &req)
+{
+	(void)uri; //uri not needed?
+	std::string	target = loc->return_url;
+	std::string	code = std::to_string(loc->return_code);
+	if (!req.query.empty() && target.find('?') == std::string::npos)
+		target += "?" + req.query;
+	std::string body = "<html><body>Redirecting to " + target + "</body></html>";
+	std::string response = HTTP::buildResponse(body.size(), body, code, "text/html", target); // overloads r pog
+	if (send(fd, response.c_str(), response.size(), 0) == -1)
+			Logger::printLog("send() failed on fd {}: {}", fd, strerror(errno));
+	// absolute vs relative paths? Any input?
+}

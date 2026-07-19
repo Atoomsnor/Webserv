@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <sstream>
 #include <stdexcept>
+#include <algorithm> //couldn't compile at home without
 
 static	std::string matchExtension(const std::string &uri)
 {
@@ -87,12 +88,19 @@ void	Server::handleClient(int fd)
 	}
 	Logger::printLog("method: {} uri: {} path: {}", req.method, req.uri, loc->root + loc->path + loc->index);
 	
+	if (loc->return_code != 0)
+	{
+		handleRedir(fd, req.uri, loc, req);
+		return ;
+	}
+
 	if (std::find(loc->methods.begin(), loc->methods.end(), req.method) == loc->methods.end())
 	{
 		Logger::printLog("405 Method Not Allowed!");
 		sendError(fd, 405);
 		return ;
 	}
+
 	std::map<std::string, std::string>::iterator it = loc->cgi.find(matchExtension(req.uri));
 	if (it != loc->cgi.end())
 	{
