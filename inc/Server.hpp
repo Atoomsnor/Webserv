@@ -26,10 +26,10 @@ class Server
 		int									socket_fd;
 		sockaddr_in							server_addr;
 		struct epoll_event					events[64];
-		std::map<int, std::string>			client_ips;
-		std::map<int, CGIState>				cgi_states;
+		std::map<int, std::string>			client_ips; // client_fd -> client IP, for logging and CGI env vars
+		std::map<int, CGIState>				cgi_states; // out_pipe[0] -> CGI state, for building the response
 		std::map<int, int>					cgi_write; // in_pipe[1] -> out_pipe[0]
-		std::map<int, std::string> 			client_buffers; // eyo wtf is this
+		std::map<int, std::string>			client_buffers; // client_fd -> accumulated bytes until a full request is read
 
 	public:
 		Server(std::vector<Parser::ServerConfig> server_conf);
