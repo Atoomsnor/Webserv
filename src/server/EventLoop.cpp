@@ -31,6 +31,8 @@ void	Server::eventLoop()
 				CGIResponse(events[i].data.fd);
 			else if (events[i].data.fd == socket_fd)
 				acceptClient(events[i].data.fd);
+			else if (pending_sends.count(events[i].data.fd))
+				flushPending(events[i].data.fd);
 			else
 				handleClient(events[i].data.fd);
 		}

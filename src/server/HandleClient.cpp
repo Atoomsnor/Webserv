@@ -116,6 +116,6 @@ void	Server::handleClient(int fd)
 	else if (req.method == "DELETE")
 		handleDelete(fd, req.uri, loc);
 
-	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
-	close(fd);
+	// epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+	// close(fd);
 }

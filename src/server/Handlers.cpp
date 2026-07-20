@@ -25,6 +25,8 @@ std::string	Server::getContentType(const std::string &path)
 		return ("text/css");
 	if (path.ends_with(".js"))
 		return ("application/javascript");
+	if (path.ends_with(".gif"))
+		return ("image/gif");
 	return ("application/octet-stream");
 }
 
@@ -77,21 +79,18 @@ void	Server::handleGet(int fd, std::string uri, Parser::LocationConfig *loc)
 	str = ss_buffer.str();
 	std::string response = HTTP::buildResponse(str.size(), str, HTTP::getResponseCode(200), getContentType(filepath));
 	Logger::printLog("response: {}", response);
-	ssize_t read_bytes = 0;
-	while (true)
-	{
-		read_bytes = send(fd, response.c_str(), response.size(), 0);
-		if (read_bytes < 0)
-		{
-			Logger::printLog("send() failed on fd {}: {}", fd, strerror(errno));
-			break;
-		}
-		if (read_bytes == 0)
-			break;
-		if (read_bytes >= (ssize_t)response.size())
-			break;
-		response = response.substr(read_bytes, response.size() - read_bytes);
-	}
+	// ssize_t read_bytes = 0;
+	sendResponse(fd, response);
+	// if (read_bytes < 0)
+	// {
+	// 	Logger::printLog("send() failed on fd {}: {}", fd, strerror(errno));
+	// 	break;
+	// }
+	// if (read_bytes == 0)
+	// 	break;
+	// if (read_bytes >= (ssize_t)response.size())
+	// 	break;
+	// response = response.substr(read_bytes, response.size() - read_bytes);
 }
 
 static bool isDirectory(const std::string &path)
@@ -132,8 +131,9 @@ void Server::handlePost(int fd, std::string &uri, Parser::LocationConfig *loc, H
 
 	std::string body = "<html><body>OK</body></html>";
 	std::string response = HTTP::buildResponse(body.size(), body, HTTP::getResponseCode(200), getContentType(".html"));
-	if (send(fd, response.c_str(), response.size(), 0) == -1)
-		Logger::printLog("send() failed on fd {}: {}", fd, strerror(errno));
+	sendResponse(fd, response);
+	// if (send(fd, response.c_str(), response.size(), 0) == -1)
+		// Logger::printLog("send() failed on fd {}: {}", fd, strerror(errno));
 }
 
 void	Server::handleRedir(int fd, std::string &uri, Parser::LocationConfig *loc, HTTP::Request &req)
@@ -145,7 +145,8 @@ void	Server::handleRedir(int fd, std::string &uri, Parser::LocationConfig *loc, 
 		target += "?" + req.query;
 	std::string body = "<html><body>Redirecting to " + target + "</body></html>";
 	std::string response = HTTP::buildResponse(body.size(), body, code, "text/html", target); // overloads r pog
-	if (send(fd, response.c_str(), response.size(), 0) == -1)
-			Logger::printLog("send() failed on fd {}: {}", fd, strerror(errno));
+	sendResponse(fd, response);
+	// if (send(fd, response.c_str(), response.size(), 0) == -1)
+			// Logger::printLog("send() failed on fd {}: {}", fd, strerror(errno));
 	// absolute vs relative paths? Any input?
 }

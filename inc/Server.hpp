@@ -30,6 +30,7 @@ class Server
 		std::map<int, CGIState>				cgi_states; // out_pipe[0] -> CGI state, for building the response
 		std::map<int, int>					cgi_write; // in_pipe[1] -> out_pipe[0]
 		std::map<int, std::string>			client_buffers; // client_fd -> accumulated bytes until a full request is read
+		std::map<int, std::string>			pending_sends;
 
 	public:
 		Server(std::vector<Parser::ServerConfig> server_conf);
@@ -73,4 +74,7 @@ class Server
 
 		void						CGIWrite(int pipe_fd);
 		void						CGIResponse(int pipe_fd);
+
+		void						sendResponse(int fd, const std::string &response);
+		void						flushPending(int fd);
 };

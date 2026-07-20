@@ -23,7 +23,8 @@ SRC_FILES		=	main.cpp Logger.cpp \
 					Parser.cpp HTTP.cpp \
 					Server.cpp SocketSetup.cpp \
 					EventLoop.cpp HandleClient.cpp \
-					Handlers.cpp CGI.cpp Error.cpp 
+					Handlers.cpp CGI.cpp Error.cpp \
+					Response.cpp
 
 LOG_DIR			= logs
 
