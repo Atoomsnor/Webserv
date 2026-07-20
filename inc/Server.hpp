@@ -31,6 +31,8 @@ class Server
 		std::map<int, int>					cgi_write; // in_pipe[1] -> out_pipe[0]
 		std::map<int, std::string>			client_buffers; // client_fd -> accumulated bytes until a full request is read
 		std::map<int, std::string>			pending_sends;
+		// std::map<int, int>					socket_to_conf;
+		// std::map<int, int>					client_to_conf;
 
 	public:
 		Server(std::vector<Parser::ServerConfig> server_conf);
