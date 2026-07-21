@@ -15,7 +15,7 @@
 
 void	Server::sendError(int fd, int error_code)
 {
-	std::string filepath = "." + server_conf[0].error_pages[error_code];
+	std::string filepath = "." + getConf(fd).error_pages[error_code];
 	std::ifstream fs(filepath, std::ios::binary);
 	if (!fs)
 	{

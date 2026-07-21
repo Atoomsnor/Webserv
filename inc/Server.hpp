@@ -31,8 +31,8 @@ class Server
 		std::map<int, int>					cgi_write; // in_pipe[1] -> out_pipe[0]
 		std::map<int, std::string>			client_buffers; // client_fd -> accumulated bytes until a full request is read
 		std::map<int, std::string>			pending_sends;
-		// std::map<int, int>					socket_to_conf;
-		// std::map<int, int>					client_to_conf;
+		std::map<int, size_t>					socket_to_conf;
+		std::map<int, size_t>					client_to_conf;
 
 	public:
 		Server(std::vector<Parser::ServerConfig> server_conf);
@@ -46,8 +46,8 @@ class Server
 		
 		/* SocketSetup */
 		void						socketSetup();
-		void						createSocket();
-		void						bindAndListen();
+		int							createSocket();
+		void						bindAndListen(int fd, size_t i);
 		void						registerToEpoll(int fd, int epoll_event);
 		
 		/* EventLoop */
@@ -79,4 +79,6 @@ class Server
 
 		void						sendResponse(int fd, const std::string &response);
 		void						flushPending(int fd);
+
+		Parser::ServerConfig &getConf(int fd);
 };

@@ -13,39 +13,45 @@
 
 void	Server::socketSetup()
 {
-	createSocket();
-	bindAndListen();
-	registerToEpoll(socket_fd, EPOLLIN);
-}
-
-void	Server::createSocket()
-{
-	socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (socket_fd == -1)
-		throw std::runtime_error("socket() error");
-	
-	int opt = 1;
-	if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
+	for (size_t i = 0; i < server_conf.size(); i++)
 	{
-		close(socket_fd);
-		throw std::runtime_error("setsockopt() error");
+		int fd = createSocket();
+		socket_to_conf[fd] = i;
+		bindAndListen(fd, i);
+		registerToEpoll(fd, EPOLLIN);
 	}
 }
 
-void	Server::bindAndListen()
+int	Server::createSocket()
+{
+	int fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (fd == -1)
+		throw std::runtime_error("socket() error");
+	
+	int opt = 1;
+	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
+	{
+		close(fd);
+		throw std::runtime_error("setsockopt() error");
+	}
+	return (fd);
+}
+
+void	Server::bindAndListen(int fd, size_t i)
 {
 	bzero(&server_addr, sizeof(server_addr));
 	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(server_conf[0].port);
-	if (inet_pton(AF_INET, server_conf[0].host.c_str(), &server_addr.sin_addr) != 1)
+	server_addr.sin_port = htons(server_conf[i].port);
+	Logger::printLog("server_conf.port {}, server_addr.sin_port {}", server_conf[i].port, server_addr.sin_port);
+	if (inet_pton(AF_INET, server_conf[i].host.c_str(), &server_addr.sin_addr) != 1)
 		throw std::runtime_error("inet_pton() error");
-	if (bind(socket_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1)
+	if (bind(fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1)
 		throw std::runtime_error("bind() error");
 		
-	if (listen(socket_fd, SOMAXCONN) == -1)
+	if (listen(fd, SOMAXCONN) == -1)
 		throw std::runtime_error("listen() error");
 
-	Logger::printLog("sin_port: {} ---- [0].port: {}", server_addr.sin_port, server_conf[0].port);
+	Logger::printLog("sin_port: {} ---- [0].port: {}", server_addr.sin_port, server_conf[i].port);
 }
 
 static int	setNonBlocking(int fd)
@@ -65,4 +71,9 @@ void	Server::registerToEpoll(int fd, int epoll_event) //take this out of here, u
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &ev) == -1)
 		throw std::runtime_error("epoll_ctl() error");
 		// Close fd in call if fails, server fd should stay open
+}
+
+Parser::ServerConfig &Server::getConf(int fd)
+{
+	return (server_conf[client_to_conf[fd]]);
 }

@@ -29,7 +29,7 @@ void	Server::eventLoop()
 				CGIWrite(events[i].data.fd);
 			else if (cgi_states.count(events[i].data.fd))
 				CGIResponse(events[i].data.fd);
-			else if (events[i].data.fd == socket_fd)
+			else if (socket_to_conf.count(events[i].data.fd))
 				acceptClient(events[i].data.fd);
 			else if (pending_sends.count(events[i].data.fd))
 				flushPending(events[i].data.fd);
@@ -44,10 +44,11 @@ void	Server::acceptClient(int fd)
 	sockaddr_in	client_addr;
 	socklen_t	addr_len = sizeof(client_addr);
 	int			client_fd = accept(fd, (struct sockaddr*)&client_addr, &addr_len);
-	client_ips[client_fd] = inet_ntoa(client_addr.sin_addr);
 
 	if (client_fd < 0)
 		return ;
+	client_to_conf[client_fd] = socket_to_conf[fd];
+	client_ips[client_fd] = inet_ntoa(client_addr.sin_addr);
 	try {
 		registerToEpoll(client_fd, EPOLLIN);
 	} catch (...) {

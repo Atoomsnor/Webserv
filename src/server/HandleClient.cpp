@@ -28,7 +28,7 @@ Parser::LocationConfig *Server::matchLocation(const std::string &uri)
 {
 	Parser::LocationConfig *match = nullptr;
 	size_t longest = 0;
-	for (Parser::LocationConfig &loc : server_conf[0].locations)
+	for (Parser::LocationConfig &loc : getConf(socket_fd).locations)
 	{
 		if (uri.find(loc.path) == 0 && loc.path.size() > longest)
 		{

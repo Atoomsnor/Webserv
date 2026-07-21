@@ -110,8 +110,8 @@ std::vector<std::string>	Server::buildEnv(int fd, HTTP::Request &req, const Pars
 	envs.push_back("REMOTE_USER="); // absolete, no auth
 	envs.push_back("REQUEST_METHOD=" + req.method); // y
 	envs.push_back("SCRIPT_NAME=" + req.uri);
-	envs.push_back(std::string("SERVER_NAME=") + inet_ntoa(server_addr.sin_addr)); // idk lmao
-	envs.push_back("SERVER_PORT=" + std::to_string(ntohs(server_addr.sin_port)));
+	envs.push_back(std::string("SERVER_NAME=") + inet_ntoa(server_addr.sin_addr)); // TODO << is being overriden with 2 or more servers
+	envs.push_back("SERVER_PORT=" + std::to_string(ntohs(server_addr.sin_port))); // TODO << is being overriden with 2 or more servers
 	envs.push_back("SERVER_PROTOCOL=HTTP/1.1");
 	envs.push_back("SERVER_SOFTWARE=Webserv/1.0");
 
