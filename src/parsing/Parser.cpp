@@ -107,7 +107,6 @@ std::vector<Parser::ServerConfig>	Parser::serverParse(std::vector<std::string> &
 			sc[server_idx].error_pages[std::stoi(*(it + 1))] = *(it + 2);
 		else if (*it == "location")
 			sc[server_idx].locations.push_back(locationParse(it, tokens.end()));
-		// Logger::printLog("token: {}", *it);
 	}
 	// seperate static func to check for missing elements? Is that even necessary?
 	return (sc);

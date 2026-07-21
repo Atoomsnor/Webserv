@@ -48,8 +48,6 @@ bool	Server::fetchRequest(int fd)
 	ssize_t bytes = recv(fd, buf, sizeof(buf), 0);
 	if (bytes <= 0)
 	{
-		// if (bytes < 0)
-		// 	perror("recv() error");
 		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
 		close(fd);
 		client_buffers.erase(fd);
@@ -116,7 +114,4 @@ void	Server::handleClient(int fd)
 		handlePost(fd, req.uri, loc, req);
 	else if (req.method == "DELETE")
 		handleDelete(fd, req.uri, loc);
-
-	// epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
-	// close(fd);
 }

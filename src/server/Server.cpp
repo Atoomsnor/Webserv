@@ -30,11 +30,6 @@ void	Server::print_server(Server &server) const
 	Logger::printLog("sin_family {}\nsin_port: {}\nsin_addr {}\n", server_addr.sin_family, server_addr.sin_port, 4);
 	(void)server;
 }
-
-// std::vector<Parser::ServerConfig> &Server::getServerConf() const
-// {
-// 	return (server_conf);
-// }
 	
 Server	&Server::operator=(const Server &&rhs)
 {

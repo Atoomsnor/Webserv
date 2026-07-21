@@ -27,13 +27,10 @@ void	Server::handleCGI(int fd, HTTP::Request &req, Parser::LocationConfig *loc, 
 	std::string script = req.uri.substr(loc->path.size());
 	std::string filepath = "." + loc->root + script;
 	
-	// Logger::printLog("We are in CGI {} {} {} {}", fd, req.uri, filepath, interpreter);
 	int		in_pipe[2];
 	int		out_pipe[2];
 
 	std::vector<std::string> envStrings = buildEnv(fd, req, *loc); // request to env for execve
-	// for (const std::string &e : envStrings)
-	// 	Logger::printLog("env: {}", e);
 
 	if (pipe(in_pipe) < 0)
 	{

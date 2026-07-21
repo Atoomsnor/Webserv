@@ -33,10 +33,5 @@ void	Server::sendError(int fd, int error_code)
 	std::string response = HTTP::buildResponse(str.size(), str, HTTP::getResponseCode(error_code), getContentType(filepath));
 	Logger::printLog("response: {}", response);
 	sendResponse(fd, response);
-	// if (send(fd, response.c_str(), response.size(), 0) == -1)
-		// Logger::printLog("send() failed on fd {}: {}", fd, strerror(errno));
-	// epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
-	// fs.close();
 	client_buffers.erase(fd);
-	// close(fd);
 }
