@@ -26,7 +26,6 @@ class Server
 
 		std::vector<Parser::ServerConfig>	server_conf;
 		int									epoll_fd;
-		int									socket_fd;
 		sockaddr_in							server_addr;
 		struct epoll_event					events[64];
 		std::map<int, std::string>			client_ips; // client_fd -> client IP, for logging and CGI env vars
@@ -61,7 +60,7 @@ class Server
 
 		/* HandleClient*/
 		void						handleClient(int fd);
-		Parser::LocationConfig		*matchLocation(const std::string &uri);
+		Parser::LocationConfig		*matchLocation(const std::string &uri, const int fd);
 		bool						fetchRequest(int fd);
 
 		/* Handlers */

@@ -24,11 +24,12 @@ static	std::string matchExtension(const std::string &uri)
 	return (ret);
 }
 
-Parser::LocationConfig *Server::matchLocation(const std::string &uri)
+Parser::LocationConfig *Server::matchLocation(const std::string &uri, const int fd)
 {
 	Parser::LocationConfig *match = nullptr;
 	size_t longest = 0;
-	for (Parser::LocationConfig &loc : getConf(socket_fd).locations)
+
+	for (Parser::LocationConfig &loc : server_conf[client_to_conf[fd]].locations)
 	{
 		if (uri.find(loc.path) == 0 && loc.path.size() > longest)
 		{
@@ -79,7 +80,7 @@ void	Server::handleClient(int fd)
 	HTTP::Request req = HTTP::parse(client_buffers[fd]);
 	client_buffers.erase(fd);
 
-	Parser::LocationConfig *loc = matchLocation(req.uri);
+	Parser::LocationConfig *loc = matchLocation(req.uri, fd);
 	if (!loc)
 	{
 		Logger::printLog("404 Not Found!");

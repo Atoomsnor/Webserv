@@ -13,8 +13,7 @@
 
 Server::Server (std::vector<Parser::ServerConfig> server_conf) :
 	server_conf(server_conf),
-	epoll_fd(-1),
-	socket_fd(-1) {}
+	epoll_fd(-1) {}
 	
 void	Server::setup()
 {
@@ -24,12 +23,10 @@ void	Server::setup()
 	
 	socketSetup();
 	
-	Logger::printLog("socket_fd: {}", socket_fd);
 }
 
 void	Server::print_server(Server &server) const
 {
-	Logger::printLog("epoll_fd: {}\nsocket_fd: {}\n", epoll_fd, socket_fd);
 	Logger::printLog("sin_family {}\nsin_port: {}\nsin_addr {}\n", server_addr.sin_family, server_addr.sin_port, 4);
 	(void)server;
 }
@@ -45,7 +42,6 @@ Server	&Server::operator=(const Server &&rhs)
 	{
 		server_conf	= std::move(rhs.server_conf);
 		epoll_fd	= rhs.epoll_fd;
-		socket_fd	= rhs.socket_fd;
 		// put new fd's to -1 aswell???
 	}
 	return (*this);	
@@ -58,6 +54,4 @@ Server::~Server()
 {
 	if (epoll_fd >= 0)
 		close(epoll_fd);
-	if (socket_fd >= 0)
-		close(socket_fd);
 }

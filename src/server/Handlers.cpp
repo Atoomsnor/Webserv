@@ -33,7 +33,7 @@ std::string	Server::getContentType(const std::string &path)
 void	Server::handleDelete(int fd, std::string uri, Parser::LocationConfig *loc)
 {
 	std::string root = loc->root.empty() ? loc->upload_store : loc->root;
-	std::string filepath = "." + loc->root + uri;
+	std::string filepath = "." + root + uri;
 
 	if (access(filepath.c_str(), F_OK) == -1)
 	{
