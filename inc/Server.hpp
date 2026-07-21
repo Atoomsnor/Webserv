@@ -14,6 +14,7 @@ struct CGIState
 	pid_t		pid;
 	std::string	body;
 	std::string	output;
+	size_t		body_sent = 0;
 };
 
 class Server

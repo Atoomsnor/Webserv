@@ -14,21 +14,36 @@
 #include <stdexcept>
 #include <sys/wait.h>
 
+static void	closePipes(int in_pipe[2], int out_pipe[2])
+{
+	close(in_pipe[0]);
+	close(in_pipe[1]);
+	close(out_pipe[0]);
+	close(out_pipe[1]);
+}
+
 void	Server::handleCGI(int fd, HTTP::Request &req, Parser::LocationConfig *loc, std::string interpreter)
 {
 	std::string script = req.uri.substr(loc->path.size());
 	std::string filepath = "." + loc->root + script;
 	
-	Logger::printLog("We are in CGI {} {} {} {}", fd, req.uri, filepath, interpreter);
+	// Logger::printLog("We are in CGI {} {} {} {}", fd, req.uri, filepath, interpreter);
 	int		in_pipe[2];
 	int		out_pipe[2];
 
 	std::vector<std::string> envStrings = buildEnv(fd, req, *loc); // request to env for execve
-	for (const std::string &e : envStrings)
-		Logger::printLog("env: {}", e);
+	// for (const std::string &e : envStrings)
+	// 	Logger::printLog("env: {}", e);
 
-	if (pipe(in_pipe) < 0 || pipe(out_pipe) < 0)
+	if (pipe(in_pipe) < 0)
 	{
+		sendError(fd, 500);
+		return ;
+	}
+	if (pipe(out_pipe) < 0)
+	{
+		close(in_pipe[0]);
+		close(in_pipe[1]);
 		sendError(fd, 500);
 		return ;
 	}
@@ -38,43 +53,37 @@ void	Server::handleCGI(int fd, HTTP::Request &req, Parser::LocationConfig *loc, 
 	pid_t pid = fork();
 	if (pid == -1)
 	{
-		close(in_pipe[0]);
-		close(in_pipe[1]);
-		close(out_pipe[0]);
-		close(out_pipe[1]);
+		closePipes(in_pipe, out_pipe);
 		sendError(fd, 500);
 		return ;
 	}
 	if (pid == 0)
 	{
-		close(in_pipe[1]);
-		close(out_pipe[0]);
 		int devnull = open("/dev/null", O_WRONLY);
 		if (dup2(in_pipe[0], STDIN_FILENO) == -1 || dup2(out_pipe[1], STDOUT_FILENO) == -1 || dup2(devnull, STDERR_FILENO) == -1)
 			exit(1);
 		close(devnull);
-		close(in_pipe[0]);
-		close(out_pipe[1]);
+		closePipes(in_pipe, out_pipe);
 
+		// envStrings to envp for execve()
 		std::vector<char*> envp;
 		for (std::string &e : envStrings)
 			envp.push_back(e.data());
 		envp.push_back(nullptr);
 
-		char *argv[] = { interpreter.data(), filepath.data(), nullptr };
+		char *argv[] = { interpreter.data(), filepath.data(), nullptr }; // full script path
 		execve(interpreter.c_str(), argv, envp.data());
 		Logger::printLog("execve failed: {}", strerror(errno));
 		exit(1);
 	}
 	// parent
-	Logger::printLog("Hello im a dad");
-
 	close(in_pipe[0]); // child read-end
 	close(out_pipe[1]); // child write-end
 
 	int write_fd = -1;
 	if (!req.body.empty()) // POST body needs writing to child stdin
 	{
+		fcntl(in_pipe[1], F_SETFL, O_NONBLOCK);
 		registerToEpoll(in_pipe[1], EPOLLOUT);
 		write_fd = in_pipe[1];
 	}
@@ -135,11 +144,17 @@ std::vector<std::string>	Server::buildEnv(int fd, HTTP::Request &req, const Pars
 
 void	Server::CGIWrite(CGIState &cgi)
 {
-	Logger::printLog("we in cgiwrite");
-	write(cgi.write_fd, cgi.body.c_str(), cgi.body.size());
-	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, cgi.write_fd, nullptr);
-	close(cgi.write_fd);
-	cgi.write_fd = -1;
+	ssize_t n = write(cgi.write_fd, cgi.body.data() + cgi.body_sent, cgi.body.size() - cgi.body_sent);
+	if (n > 0)
+		cgi.body_sent += static_cast<size_t>(n);
+	if (n < 0)
+		return ;
+	if (cgi.body_sent >= cgi.body.size())
+	{
+		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, cgi.write_fd, nullptr);
+		close(cgi.write_fd);
+		cgi.write_fd = -1;
+	}
 }
 
 void Server::CGIResponse(CGIState &cgi) //temp
