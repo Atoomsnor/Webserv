@@ -9,7 +9,9 @@
 struct CGIState
 {
 	int			client_fd;
+	int			read_fd; // out_pipe[0], cgi_states key
 	int			write_fd; // in_pipe[1]
+	pid_t		pid;
 	std::string	body;
 	std::string	output;
 };
@@ -28,11 +30,10 @@ class Server
 		struct epoll_event					events[64];
 		std::map<int, std::string>			client_ips; // client_fd -> client IP, for logging and CGI env vars
 		std::map<int, CGIState>				cgi_states; // out_pipe[0] -> CGI state, for building the response
-		std::map<int, int>					cgi_write; // in_pipe[1] -> out_pipe[0]
 		std::map<int, std::string>			client_buffers; // client_fd -> accumulated bytes until a full request is read
 		std::map<int, std::string>			pending_sends;
-		std::map<int, size_t>					socket_to_conf;
-		std::map<int, size_t>					client_to_conf;
+		std::map<int, size_t>				socket_to_conf;
+		std::map<int, size_t>				client_to_conf;
 
 	public:
 		Server(std::vector<Parser::ServerConfig> server_conf);
@@ -74,8 +75,10 @@ class Server
 		void						handleCGI(int fd, HTTP::Request &req, Parser::LocationConfig *loc, std::string interpreter);
 		std::vector<std::string>	buildEnv(int fd, HTTP::Request &req, const Parser::LocationConfig &loc);
 
-		void						CGIWrite(int pipe_fd);
-		void						CGIResponse(int pipe_fd);
+		CGIState				*findCGI(int fd);
+		void					cleanupCGI(CGIState &cgi);
+		void					CGIWrite(CGIState &cgi);
+		void					CGIResponse(CGIState &cgi);
 
 		void						sendResponse(int fd, const std::string &response);
 		void						flushPending(int fd);

@@ -24,11 +24,14 @@ void	Server::eventLoop()
 			throw std::runtime_error("epoll_wait() error");
 		for (int i = 0; i < n; i++)
 		{
-			// Logger::printLog("epoll fired on fd {}", events[i].data.fd);
-			if (cgi_write.count(events[i].data.fd))
-				CGIWrite(events[i].data.fd);
-			else if (cgi_states.count(events[i].data.fd))
-				CGIResponse(events[i].data.fd);
+			CGIState *cgi = findCGI(events[i].data.fd);
+			if (cgi)
+			{
+				if (events[i].data.fd == cgi->write_fd)
+					CGIWrite(*cgi);
+				else
+					CGIResponse(*cgi);
+			}
 			else if (socket_to_conf.count(events[i].data.fd))
 				acceptClient(events[i].data.fd);
 			else if (pending_sends.count(events[i].data.fd))
@@ -37,6 +40,18 @@ void	Server::eventLoop()
 				handleClient(events[i].data.fd);
 		}
 	}
+}
+
+CGIState	*Server::findCGI(int fd)
+{
+	std::map<int, CGIState>::iterator it = cgi_states.find(fd);
+	if (it != cgi_states.end())
+		return (&it->second); // fd is a read fd
+
+	for (it = cgi_states.begin(); it != cgi_states.end(); ++it)
+		if (it->second.write_fd == fd)
+			return (&it->second); // fd is this CGI's write pipe
+	return (nullptr);
 }
 
 void	Server::acceptClient(int fd)

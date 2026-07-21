@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <sstream>
 #include <stdexcept>
+#include <sys/wait.h>
 
 void	Server::handleCGI(int fd, HTTP::Request &req, Parser::LocationConfig *loc, std::string interpreter)
 {
@@ -71,16 +72,16 @@ void	Server::handleCGI(int fd, HTTP::Request &req, Parser::LocationConfig *loc, 
 	close(in_pipe[0]); // child read-end
 	close(out_pipe[1]); // child write-end
 
-	if (!req.body.empty()) // POST body needs to be written to child stdin
+	int write_fd = -1;
+	if (!req.body.empty()) // POST body needs writing to child stdin
 	{
-		Logger::printLog("registering in_pipe[1] {} for write", in_pipe[1]);
-		registerToEpoll(in_pipe[1], EPOLLOUT); // watch for when pipe is ready to write
-		cgi_write[in_pipe[1]] = out_pipe[0]; // link write fd back to read fd for state lookup
+		registerToEpoll(in_pipe[1], EPOLLOUT);
+		write_fd = in_pipe[1];
 	}
 	else
 		close(in_pipe[1]);
 
-	cgi_states[out_pipe[0]] = {fd, in_pipe[1], req.body, ""}; // store state for when epoll fires
+	cgi_states[out_pipe[0]] = {fd, out_pipe[0], write_fd, pid, req.body, ""};
 }
 
 std::vector<std::string>	Server::buildEnv(int fd, HTTP::Request &req, const Parser::LocationConfig &loc)
@@ -132,48 +133,49 @@ std::vector<std::string>	Server::buildEnv(int fd, HTTP::Request &req, const Pars
 	return (envs);
 }
 
-void	Server::CGIWrite(int pipe_fd)
+void	Server::CGIWrite(CGIState &cgi)
 {
 	Logger::printLog("we in cgiwrite");
-	int	out_fd = cgi_write[pipe_fd];
-	CGIState &state = cgi_states[out_fd];
-
-	if (write(pipe_fd, state.body.c_str(), state.body.size()) == -1) //errorcheck
-		Logger::printLog("write() to CGI stdin failed on pipe {}: {}", pipe_fd, strerror(errno));
-	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, nullptr);
-	close(pipe_fd);
-	cgi_write.erase(pipe_fd);
+	write(cgi.write_fd, cgi.body.c_str(), cgi.body.size());
+	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, cgi.write_fd, nullptr);
+	close(cgi.write_fd);
+	cgi.write_fd = -1;
 }
 
-void Server::CGIResponse(int pipe_fd) //temp
+void Server::CGIResponse(CGIState &cgi) //temp
 {
-	Logger::printLog("we in CGIResponse for pipe_fd {}", pipe_fd);
-	CGIState &state = cgi_states[pipe_fd];
-
-	char buf[4096];
-	ssize_t n;
-
-	n = read(pipe_fd, buf, sizeof(buf));
+	char	buf[4096];
+	ssize_t	n = read(cgi.read_fd, buf, sizeof(buf));
 
 	if (n > 0)
 	{
-		state.output.append(buf, n);
-		return ; // epoll will fire again when more data arrives
+		cgi.output.append(buf, n);
+		return ; // epoll fires again for the rest
 	}
-	if (n == -1)
-		return ;
-	Logger::printLog("CGI process finished (pipe EOF)");
-	if (state.output.empty())
-		sendError(state.client_fd, 500);
+	if (n < 0)
+		return ; // can't inspect errno, so treat as "not ready", retry
+
+	int			client_fd = cgi.client_fd;
+	std::string	output = cgi.output;
+
+	cleanupCGI(cgi); // closes both pipes, reaps child, erases from cgi_states
+
+	if (output.empty())
+		sendError(client_fd, 500);
 	else
+		sendResponse(client_fd, "HTTP/1.1 200 OK\r\n" + output);
+}
+
+void	Server::cleanupCGI(CGIState &cgi)
+{
+	if (cgi.write_fd >= 0)
 	{
-		std::string response = "HTTP/1.1 200 OK\r\n" + state.output;
-		if (send(state.client_fd, response.c_str(), response.size(), 0) == -1)
-			Logger::printLog("send() failed on fd {}: {}", state.client_fd, strerror(errno));
+		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, cgi.write_fd, nullptr);
+		close(cgi.write_fd);
 	}
-	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, state.client_fd, nullptr);
-	close(state.client_fd);
-	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, pipe_fd, nullptr);
-	close(pipe_fd);
-	cgi_states.erase(pipe_fd);
+	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, cgi.read_fd, nullptr);
+	close(cgi.read_fd);
+	if (cgi.pid > 0)
+		waitpid(cgi.pid, nullptr, 0);
+	cgi_states.erase(cgi.read_fd); // MUST be last — invalidates cgi
 }
