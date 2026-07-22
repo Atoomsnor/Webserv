@@ -77,7 +77,12 @@ void	Server::handleClient(int fd)
 		return ;
 	HTTP::Request req = HTTP::parse(client_buffers[fd]);
 	client_buffers.erase(fd);
-
+	if (req.body.size() > getConf(fd).max_body_size)
+	{
+		Logger::printLog("413 Payload Too Large!"); // 413 error html pliz <3
+		sendError(fd, 413);
+		return ;
+	}
 	Parser::LocationConfig *loc = matchLocation(req.uri, fd);
 	if (!loc)
 	{
