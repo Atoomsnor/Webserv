@@ -71,8 +71,19 @@ void	Server::handleGet(int fd, std::string uri, Parser::LocationConfig *loc)
 	std::string str;
 	if (!fs)
 	{
-		sendError(fd, 404);
-		return ;
+		if (loc->auto_index == true)
+		{
+			std::string autoindex = HTTP::buildAutoindex(loc->root);
+			std::string response = HTTP::buildResponse(autoindex.size(), autoindex, HTTP::getResponseCode(200), getContentType(".html"));
+			if (send(fd, response.c_str(), response.size(), 0) == -1)
+				Logger::printLog("send() failed on fd {}: {}", fd, strerror(errno));
+			return ;
+		}
+		else
+		{
+			sendError(fd, 404);
+			return ;
+		}
 	}
 	std::stringstream ss_buffer;
 	ss_buffer << fs.rdbuf();

@@ -1,6 +1,10 @@
 #include "HTTP.hpp"
 #include "Logger.hpp"
 #include <sstream>
+#include <sys/types.h>
+#include <dirent.h>
+#include <cstring>
+#include <iostream>
 
 HTTP::Request	HTTP::parse(const std::string &data)
 {
@@ -120,6 +124,59 @@ std::string	HTTP::getQuery(std::string &uri)
 		uri = uri.substr(0, qloc);
 	}
 	return (query);
+}
+
+static std::string buildHref(DIR *dirfd)
+{
+	dirent *tempdir;
+	std::string ret;
+
+	while (true)
+	{
+		tempdir = readdir(dirfd);
+		if (tempdir == NULL)
+			break ;
+		std::string temp = tempdir->d_name;
+		if (temp == "." || temp == "..")
+			continue ;
+		ret += "\t\t<a href=\"" + temp;
+		if (tempdir->d_type == DT_DIR)
+			ret += "/";
+		ret += "\">" + temp;
+		if (tempdir->d_type == DT_DIR)
+			ret += "/";
+		ret += "</a><br>";
+		ret += "\n";
+	}
+	return (ret);
+}
+
+std::string HTTP::buildAutoindex(std::string filepath)
+{
+	filepath.erase(0, 1);
+	// std::cout << "FILEPATH TO OPEN:" << filepath;
+	DIR	*dirfd = opendir(filepath.c_str());
+	if (dirfd == NULL)
+	{
+		throw std::runtime_error("failed to open directory"); //don't know if throw is enough
+		return NULL;
+	}
+	std::string autoindex = R"(
+<html>
+	<head><title>Index of /var</title></head>
+	<body>
+		<h1>Index of /var</h1>
+		<hr>
+)";
+	autoindex += buildHref(dirfd);
+	autoindex += R"(		<hr>
+	</body>
+</html>)";
+	closedir(dirfd);
+	return (autoindex);
+	// I currently just add eveyrthing in assets, errors leads to a 404, should probably be 403
+	// I also show style.css in its entirety.
+	// ../skips, however, maybe if the filepath passed is out of bounds, it will still extract, gotta test.
 }
 
 std::string	HTTP::buildResponse(const size_t size, const std::string &body, const std::string code, const std::string &content_type)
